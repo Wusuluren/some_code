@@ -29,9 +29,13 @@ def Filter(fileList):
 
 		for char in srcCode:
 			if '{' == char:
+				if 0 == len(brackStack):
+					destCode = destCode + '{'
 				brackStack.append(char)
 			elif '}' == char:
 				brackStack.pop()
+				if 0 == len(brackStack):
+					destCode = destCode + '}'
 			elif 0 == len(brackStack):
 				destCode = destCode + char
 
