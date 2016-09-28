@@ -2,11 +2,11 @@ import os
 import re
 import shutil
 
-def FindFile():
+def FindFile(dir):
 	fileList = []
-	curDirFiles = os.listdir()
+	curDirFiles = os.listdir(dir)
 	for f in curDirFiles:
-		if [] != re.findall('.[c|cpp]$', f):
+		if [] != re.findall('\.+(c|cpp|cc){1}$', f):
 			fileList.append(f)
 
 	return fileList
@@ -44,5 +44,5 @@ def Filter(fileList):
 		srcFile.close()
 		destFile.close()
 
-if __name__ == '__main__':	
-	Filter(FindFile())
+if __name__ == '__main__':
+	Filter(FindFile(os.curdir))
