@@ -1,0 +1,16 @@
+*
+
+!.txt
+
+!*.cpp
+!*.c
+!*.h
+
+!*.rc
+!.inf
+!SOURCES
+
+!makefile
+!.sh
+
+!.py
