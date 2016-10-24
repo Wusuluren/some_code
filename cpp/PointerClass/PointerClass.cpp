@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "stdafx.h"
+#include "PointerClass.h"
 
 ///////////////////////////////////////////////////////
 //基本类型指针(int、float等)类

@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include <Windows.h>
+#include "ThreadPool.h"
 
 //线程实例
 DWORD WINAPI StoreFileThreadProc(LPVOID lpThreadParameter)
