@@ -10,9 +10,9 @@ do
         c);&
         h);&
         rc);&
-		inf);&
-		sh);&
-		py);&
+        inf);&
+        sh);&
+        py);&
         txt);&
         makefile);&
         SOURCES)
