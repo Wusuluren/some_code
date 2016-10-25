@@ -19,7 +19,7 @@ public:
 	//返回原始指针
 	T *get();
 	//索引内容
-	T operator[](int index);
+	T& operator[](int index);
 	//默认重置指针
 	void reset();
 	//重置指针
@@ -163,7 +163,7 @@ T *BasePointer<T>::get()
 
 //索引内容
 template <typename T>
-T BasePointer<T>::operator[](int index)
+T& BasePointer<T>::operator[](int index)
 {
 	return this->pointer[index];
 }
