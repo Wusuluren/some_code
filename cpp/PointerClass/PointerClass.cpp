@@ -1,115 +1,6 @@
 #include <stdio.h>
 #include "stdafx.h"
-#include "PointerClass.h"
-
-///////////////////////////////////////////////////////
-//基本类型指针(int、float等)类
-
-//默认构造函数
-template <typename T>
-BasePointer<T>::BasePointer():
-	pointer(NULL), error(0)
-{
-}
-
-//构造函数
-template <typename T>
-BasePointer<T>::BasePointer(int number):
-	pointer(NULL), error(0)
-{
-	this->pointer = (T *)malloc(sizeof(T) * number);
-	if (NULL == this->pointer)
-	{
-		this->error = 1;
-	}
-}
-
-//拷贝构造函数
-template <typename T>
-BasePointer<T>::BasePointer(T *p):
-	pointer(NULL), error(0)
-{
-	this->pointer = p;
-}
-
-//析构函数
-template <typename T>
-BasePointer<T>::~BasePointer()
-{
-	if (NULL != this->pointer)
-	{
-		free(this->pointer);
-		//DbgLog("释放内存\n");
-	}
-}
-
-//返回错误状态
-template <typename T>
-int BasePointer<T>::Error()
-{
-	return this->error;
-}
-
-//返回原始指针
-template <typename T>
-T *BasePointer<T>::get()
-{
-	return this->pointer;
-}
-
-//索引内容
-template <typename T>
-T BasePointer<T>::operator[](int index)
-{
-	return this->pointer[index];
-}
-
-//默认重置指针
-template <typename T>
-void BasePointer<T>::reset()
-{
-	if (NULL != this->pointer)
-	{
-		free(this->pointer);
-		//DbgLog("释放内存\n");
-	}
-	this->error = 0;
-
-	this->poiner = NULL;
-}
-
-//重置指针
-template <typename T>
-void BasePointer<T>::reset(int number)
-{
-	if (NULL != this->pointer)
-	{
-		free(this->pointer);
-		//DbgLog("释放内存\n");
-	}
-	this->error = 0;
-
-	this->pointer = (T *)malloc(sizeof(T) * number);
-	if (NULL == this->pointer)
-	{
-		this->error = 1;
-	}
-}
-
-//拷贝重置指针
-template <typename T>
-void BasePointer<T>::reset(T *p)
-{
-	if (NULL != this->pointer)
-	{
-		free(this->pointer);
-		//DbgLog("释放内存\n");
-	}
-	this->error = 0;
-
-	this->pointer = p;	
-}
-
+#include "TestCtpPciePointer.h"
 
 
 //////////////////////////////////////////////////////
@@ -147,6 +38,8 @@ FilePointer::~FilePointer()
 		fclose(this->pointer);
 		//DbgLog("关闭文件\n");
 	}
+	this->pointer = NULL;
+	this->error = 0;
 }
 
 //返回错误状态
@@ -164,23 +57,13 @@ FILE *FilePointer::get()
 //默认重置指针
 void FilePointer::reset()
 {
-	if (NULL != this->pointer)
-	{
-		fclose(this->pointer);
-		//DbgLog("关闭文件\n");
-	}
-	this->error = 0;
+	this->~FilePointer();
 }
 
 //重置指针
 void FilePointer::reset(char *filePath, char *fileMode)
 {
-	if (NULL != this->pointer)
-	{
-		fclose(this->pointer);
-		//DbgLog("关闭文件\n");
-	}
-	this->error = 0;
+	this->~FilePointer();
 
 	this->pointer = fopen(filePath, fileMode);
 	if (NULL == this->pointer)
@@ -192,13 +75,7 @@ void FilePointer::reset(char *filePath, char *fileMode)
 //拷贝重置指针
 void FilePointer::reset(FILE *p)
 {
-	if (NULL != this->pointer)
-	{
-		fclose(this->pointer);
-		//DbgLog("关闭文件\n");
-	}
-	this->error = 0;
-
+	this->~FilePointer();
 	this->pointer = p;
 }
 
@@ -250,6 +127,8 @@ HandlePointer::~HandlePointer()
 		CloseHandle(this->pointer);
 		//DbgLog("关闭Windows句柄\n");
 	}
+	this->pointer = INVALID_HANDLE_VALUE;
+	this->error = 0;
 }
 
 //返回错误状态
@@ -267,13 +146,7 @@ HANDLE HandlePointer::get()
 //默认重置指针
 void HandlePointer::reset()
 {
-	if (INVALID_HANDLE_VALUE != this->pointer)
-	{
-		CloseHandle(this->pointer);
-		//DbgLog("关闭Windows句柄\n");
-		this->pointer = INVALID_HANDLE_VALUE;
-	}
-	this->error = 0;
+	this->~HandlePointer();
 }
 
 //重置指针
@@ -286,12 +159,7 @@ void HandlePointer::reset(
     DWORD dwFlagsAndAttributes,
     HANDLE hTemplateFile)
 {
-	if (INVALID_HANDLE_VALUE != this->pointer)
-	{
-		CloseHandle(this->pointer);
-		//DbgLog("关闭Windows句柄\n");
-	}
-	this->error = 0;
+	this->~HandlePointer();
 
 	this->pointer = CreateFile(
 		lpFileName,
@@ -311,12 +179,6 @@ void HandlePointer::reset(
 //拷贝重置指针
 void HandlePointer::reset(HANDLE p)
 {
-	if (INVALID_HANDLE_VALUE != this->pointer)
-	{
-		CloseHandle(this->pointer);
-		//DbgLog("关闭Windows句柄\n");
-	}
-	this->error = 0;
-
+	this->~HandlePointer();
 	this->pointer = p;
 }

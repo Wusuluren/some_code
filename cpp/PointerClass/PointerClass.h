@@ -101,3 +101,97 @@ private:
 	HANDLE pointer;//指针
 	int error;//错误值
 };
+
+
+///////////////////////////////////////////////////////
+//模板类的声明和定义不能分开成多个文件
+//基本类型指针(int、float等)类
+
+//默认构造函数
+template <typename T>
+BasePointer<T>::BasePointer():
+	pointer(NULL), error(0)
+{
+}
+
+//构造函数
+template <typename T>
+BasePointer<T>::BasePointer(int number):
+	pointer(NULL), error(0)
+{
+	this->pointer = (T *)malloc(sizeof(T) * number);
+	if (NULL == this->pointer)
+	{
+		this->error = 1;
+	}
+}
+
+//拷贝构造函数
+template <typename T>
+BasePointer<T>::BasePointer(T *p):
+	pointer(NULL), error(0)
+{
+	this->pointer = p;
+}
+
+//析构函数
+template <typename T>
+BasePointer<T>::~BasePointer()
+{
+	if (NULL != this->pointer)
+	{
+		free(this->pointer);
+		//DbgLog("释放内存\n");
+	}
+	this->pointer = NULL;
+	this->error = 0;
+}
+
+//返回错误状态
+template <typename T>
+int BasePointer<T>::Error()
+{
+	return this->error;
+}
+
+//返回原始指针
+template <typename T>
+T *BasePointer<T>::get()
+{
+	return this->pointer;
+}
+
+//索引内容
+template <typename T>
+T BasePointer<T>::operator[](int index)
+{
+	return this->pointer[index];
+}
+
+//默认重置指针
+template <typename T>
+void BasePointer<T>::reset()
+{
+	this->~BasePointer();
+}
+
+//重置指针
+template <typename T>
+void BasePointer<T>::reset(int number)
+{
+	this->~BasePointer();
+
+	this->pointer = (T *)malloc(sizeof(T) * number);
+	if (NULL == this->pointer)
+	{
+		this->error = 1;
+	}
+}
+
+//拷贝重置指针
+template <typename T>
+void BasePointer<T>::reset(T *p)
+{
+	this->~BasePointer();
+	this->pointer = p;	
+}
