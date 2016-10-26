@@ -9,9 +9,9 @@ public:
 	//默认构造函数
 	BasePointer();
 	//构造函数
-	BasePointer(int number);
+	BasePointer(const int &number);
 	//拷贝构造函数
-	BasePointer(T *p);
+	BasePointer(T *&p);
 	//析构函数
 	~BasePointer();
 	//返回错误状态
@@ -19,13 +19,13 @@ public:
 	//返回原始指针
 	T *get();
 	//索引内容
-	T& operator[](int index);
+	T& operator[](const int &index);
 	//默认重置指针
 	void reset();
 	//重置指针
-	void reset(int number);
+	void reset(const int &number);
 	//拷贝重置指针
-	void reset(T *p);
+	void reset(T *&p);
 
 private:
 	T *pointer;//指针
@@ -42,7 +42,7 @@ public:
 	//构造函数
 	FilePointer(char *filePath, char *fileMode);
 	//拷贝构造函数
-	FilePointer(FILE *p);
+	FilePointer(FILE *&p);
 	//析构函数
 	~FilePointer();
 	//返回错误状态
@@ -54,7 +54,7 @@ public:
 	//重置指针
 	void reset(char *filePath, char *fileMode);
 	//拷贝重置指针
-	void reset(FILE *p);
+	void reset(FILE *&p);
 
 private:
 	FILE *pointer;//指针
@@ -68,13 +68,14 @@ public:
 	//默认构造参数
 	HandlePointer();
 	//构造函数
-	HandlePointer(LPCWSTR lpFileName,
-		DWORD dwDesiredAccess = (GENERIC_READ | GENERIC_WRITE),
-		DWORD dwShareMode = 0,
-		LPSECURITY_ATTRIBUTES lpSecurityAttributes = NULL,
-		DWORD dwCreationDisposition = CREATE_ALWAYS,
-		DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
-		HANDLE hTemplateFile = NULL
+	HandlePointer(
+		const LPCWSTR &lpFileName,
+		const DWORD &dwDesiredAccess = (GENERIC_READ | GENERIC_WRITE),
+		const DWORD &dwShareMode = 0,
+		const LPSECURITY_ATTRIBUTES &lpSecurityAttributes = NULL,
+		const DWORD &dwCreationDisposition = CREATE_ALWAYS,
+		const DWORD &dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+		const HANDLE &hTemplateFile = NULL
 	);
 	//析构函数
 	~HandlePointer();
@@ -86,16 +87,16 @@ public:
 	void reset();
 	//重置指针
 	void reset(
-		LPCWSTR lpFileName,
-		DWORD dwDesiredAccess = (GENERIC_READ | GENERIC_WRITE),
-		DWORD dwShareMode = 0,
-		LPSECURITY_ATTRIBUTES lpSecurityAttributes = NULL,
-		DWORD dwCreationDisposition = CREATE_ALWAYS,
-		DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
-		HANDLE hTemplateFile = NULL
+		const LPCWSTR &lpFileName,
+		const DWORD &dwDesiredAccess = (GENERIC_READ | GENERIC_WRITE),
+		const DWORD &dwShareMode = 0,
+		const LPSECURITY_ATTRIBUTES &lpSecurityAttributes = NULL,
+		const DWORD &dwCreationDisposition = CREATE_ALWAYS,
+		const DWORD &dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+		const HANDLE &hTemplateFile = NULL
 	);
 	//拷贝重置指针
-	void reset(HANDLE p);
+	void reset(const HANDLE &p);
 
 private:
 	HANDLE pointer;//指针
@@ -116,7 +117,7 @@ BasePointer<T>::BasePointer():
 
 //构造函数
 template <typename T>
-BasePointer<T>::BasePointer(int number):
+BasePointer<T>::BasePointer(const int &number):
 	pointer(NULL), error(0)
 {
 	this->pointer = (T *)malloc(sizeof(T) * number);
@@ -128,7 +129,7 @@ BasePointer<T>::BasePointer(int number):
 
 //拷贝构造函数
 template <typename T>
-BasePointer<T>::BasePointer(T *p):
+BasePointer<T>::BasePointer(T *&p):
 	pointer(NULL), error(0)
 {
 	this->pointer = p;
@@ -163,7 +164,7 @@ T *BasePointer<T>::get()
 
 //索引内容
 template <typename T>
-T& BasePointer<T>::operator[](int index)
+T& BasePointer<T>::operator[](const int &index)
 {
 	return this->pointer[index];
 }
@@ -177,7 +178,7 @@ void BasePointer<T>::reset()
 
 //重置指针
 template <typename T>
-void BasePointer<T>::reset(int number)
+void BasePointer<T>::reset(const int &number)
 {
 	this->~BasePointer();
 
@@ -190,7 +191,7 @@ void BasePointer<T>::reset(int number)
 
 //拷贝重置指针
 template <typename T>
-void BasePointer<T>::reset(T *p)
+void BasePointer<T>::reset(T *&p)
 {
 	this->~BasePointer();
 	this->pointer = p;	

@@ -25,7 +25,7 @@ FilePointer::FilePointer(char *filePath, char *fileMode):
 }
 
 //拷贝构造函数
-FilePointer::FilePointer(FILE *p)
+FilePointer::FilePointer(FILE *&p)
 {
 	this->pointer = p;
 }
@@ -73,7 +73,7 @@ void FilePointer::reset(char *filePath, char *fileMode)
 }
 
 //拷贝重置指针
-void FilePointer::reset(FILE *p)
+void FilePointer::reset(FILE *&p)
 {
 	this->~FilePointer();
 	this->pointer = p;
@@ -92,13 +92,13 @@ HandlePointer::HandlePointer():
 
 //构造函数
 HandlePointer::HandlePointer(    
-	LPCWSTR lpFileName,
-    DWORD dwDesiredAccess,
-    DWORD dwShareMode,
-    LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-    DWORD dwCreationDisposition,
-    DWORD dwFlagsAndAttributes,
-    HANDLE hTemplateFile):
+	const LPCWSTR &lpFileName,
+    const DWORD &dwDesiredAccess,
+    const DWORD &dwShareMode,
+    const LPSECURITY_ATTRIBUTES &lpSecurityAttributes,
+    const DWORD &dwCreationDisposition,
+    const DWORD &dwFlagsAndAttributes,
+    const HANDLE &hTemplateFile):
 	error(0)	
 {
 	//DbgLog("*创建文件%S*\n", lpFileName);
@@ -151,13 +151,13 @@ void HandlePointer::reset()
 
 //重置指针
 void HandlePointer::reset(
-	LPCWSTR lpFileName,
-    DWORD dwDesiredAccess,
-    DWORD dwShareMode,
-    LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-    DWORD dwCreationDisposition,
-    DWORD dwFlagsAndAttributes,
-    HANDLE hTemplateFile)
+	const LPCWSTR &lpFileName,
+    const DWORD &dwDesiredAccess,
+    const DWORD &dwShareMode,
+    const LPSECURITY_ATTRIBUTES &lpSecurityAttributes,
+    const DWORD &dwCreationDisposition,
+    const DWORD &dwFlagsAndAttributes,
+    const HANDLE &hTemplateFile)
 {
 	this->~HandlePointer();
 
@@ -177,7 +177,7 @@ void HandlePointer::reset(
 }
 
 //拷贝重置指针
-void HandlePointer::reset(HANDLE p)
+void HandlePointer::reset(const HANDLE &p)
 {
 	this->~HandlePointer();
 	this->pointer = p;
