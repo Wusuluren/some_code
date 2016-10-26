@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <Windows.h>
 
 //线程信息类
@@ -41,7 +42,7 @@ public:
 	//休眠进程池所有进程
 	void WaitThread();
 	//设置进程池所有进程的参数
-	void SetParameter(vector<ThreadParam_t> p);
+	void SetParameter(std::vector<ThreadParam_t> p);
 
 private:
 	//线程池管理器
@@ -150,7 +151,7 @@ void ThreadPoolManager<ThreadParam_t>::WaitThread()
 }
 
 template <typename ThreadParam_t>
-void ThreadPoolManager<ThreadParam_t>::SetParameter(vector<ThreadParam_t> p)
+void ThreadPoolManager<ThreadParam_t>::SetParameter(std::vector<ThreadParam_t> p)
 {
 	for  (int i = 0; i < this->worker.size(); i++)
 	{
