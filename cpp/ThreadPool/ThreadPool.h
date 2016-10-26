@@ -2,11 +2,25 @@
 
 #include <Windows.h>
 
+//线程信息类
+//ThreadParam_t：线程参数信息结构体
+template <typename ThreadParam_t>
+class ThreadInfo
+{
+public:
+	HANDLE thread;
+	HANDLE start;
+	HANDLE stop;
+	int id;
+	int error;
+
+	ThreadParam_t parameter;
+};
+
 
 //线程池管理类
-//ThreadInfo_t：线程信息结构体
 //ThreadParam_t：线程参数信息结构体
-template <typename ThreadInfo_t, typename ThreadParam_t>
+template <typename ThreadParam_t>
 class ThreadPoolManager
 {
 public:
@@ -30,25 +44,26 @@ public:
 	void SetParameter(vector<ThreadParam_t> p);
 
 private:
-	std::vector<ThreadInfo_t> worker;//线程池管理器
+	//线程池管理器
+	std::vector<ThreadInfo<ThreadParam_t>> worker;
 };
 
 
 /////////////////////////////////////////////////////////////////////////////////////
 //成员函数定义
 
-template <typename ThreadInfo_t, typename ThreadParam_t>
-ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::ThreadPoolManager()
+template <typename ThreadParam_t>
+ThreadPoolManager<ThreadParam_t>::ThreadPoolManager()
 {
 }
 
-template <typename ThreadInfo_t, typename ThreadParam_t>
-ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::~ThreadPoolManager()
+template <typename ThreadParam_t>
+ThreadPoolManager<ThreadParam_t>::~ThreadPoolManager()
 {
 }
 
-template <typename ThreadInfo_t, typename ThreadParam_t>
-void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::CreateThreadPool(int number, LPTHREAD_START_ROUTINE threadProc)
+template <typename ThreadParam_t>
+void ThreadPoolManager<ThreadParam_t>::CreateThreadPool(int number, LPTHREAD_START_ROUTINE threadProc)
 {
 	this->worker.resize(number);
 
@@ -65,8 +80,8 @@ void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::CreateThreadPool(int number
 	}
 }
 
-template <typename ThreadInfo_t, typename ThreadParam_t>
-void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::ResetThreadPool(int number, LPTHREAD_START_ROUTINE threadProc)
+template <typename ThreadParam_t>
+void ThreadPoolManager<ThreadParam_t>::ResetThreadPool(int number, LPTHREAD_START_ROUTINE threadProc)
 {
 	for (int i = 0; i < this->worker.size(); i++)
 	{		
@@ -91,8 +106,8 @@ void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::ResetThreadPool(int number,
 	}
 }
 
-template <typename ThreadInfo_t, typename ThreadParam_t>
-void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::DestroyThreadPool()
+template <typename ThreadParam_t>
+void ThreadPoolManager<ThreadParam_t>::DestroyThreadPool()
 {
 	for (int i = 0; i < this->worker.size(); i++)
 	{		
@@ -102,8 +117,8 @@ void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::DestroyThreadPool()
 	}
 }
 
-template <typename ThreadInfo_t, typename ThreadParam_t>
-void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::StartThread()
+template <typename ThreadParam_t>
+void ThreadPoolManager<ThreadParam_t>::StartThread()
 {
 	for (int i = 0; i < this->worker.size(); i++)
 	{
@@ -115,8 +130,8 @@ void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::StartThread()
 	}
 }
 
-template <typename ThreadInfo_t, typename ThreadParam_t>
-void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::StopThread()
+template <typename ThreadParam_t>
+void ThreadPoolManager<ThreadParam_t>::StopThread()
 {
 	for (int i = 0; i < this->worker.size(); i++)
 	{
@@ -124,8 +139,8 @@ void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::StopThread()
 	}
 }
 
-template <typename ThreadInfo_t, typename ThreadParam_t>
-void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::WaitThread()
+template <typename ThreadParam_t>
+void ThreadPoolManager<ThreadParam_t>::WaitThread()
 {
 	for (int i = 0; i < this->worker.size(); i++)
 	{
@@ -134,8 +149,8 @@ void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::WaitThread()
 	}
 }
 
-template <typename ThreadInfo_t, typename ThreadParam_t>
-void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::SetParameter(vector<ThreadParam_t> p)
+template <typename ThreadParam_t>
+void ThreadPoolManager<ThreadParam_t>::SetParameter(vector<ThreadParam_t> p)
 {
 	for  (int i = 0; i < this->worker.size(); i++)
 	{
@@ -160,23 +175,11 @@ void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::SetParameter(vector<ThreadP
 //	CString fileDir;
 //};
 
-////存储文件线程信息结构体
-//struct StoreFileThrdInfo
-//{
-//	HANDLE thread;
-//	HANDLE start;
-//	HANDLE stop;
-//	int id;
-//	int error;
-//
-//	struct StoreFileThrdParam parameter;
-//};
-
 
 ////DMA接收数据,保存数据到文件的线程,可能会保存多个文件
 //DWORD WINAPI StoreFileThreadProc(LPVOID lpThreadParameter)
 //{
-//	struct StoreFileThrdInfo * pParam = (struct StoreFileThrdInfo *)lpThreadParameter;
+//	ThreadInfo<struct StoreFileThrdParam> * pParam = (ThreadInfo<struct StoreFileThrdParam> *)lpThreadParameter;
 //
 //	while (true)
 //	{
@@ -219,6 +222,48 @@ void ThreadPoolManager<ThreadInfo_t, ThreadParam_t>::SetParameter(vector<ThreadP
 //
 //		SetEvent(pParam->stop);
 //	}
+//
+//	return 0;
+//}
+
+////测试程序
+//int main()
+//{
+//	//存储文件的线程池管理器
+//	ThreadPoolManager<struct StoreFileThrdParam> storeFileThreadPool;
+//
+//	//初始化保存文件的线程池
+//	DbgLog("创建线程池\n");
+//	int storeFileThreadNumber = 4;
+//	storeFileThreadPool.CreateThreadPool(storeFileThreadNumber, StoreFileThreadProc);
+//
+//	//重置保存文件的线程池中线程的参数信息
+//	DbgLog("设置线程池中各线程的参数\n");
+//	vector<struct StoreFileThrdParam> thrdParam(storeFileThreadNumber);
+//	UCHAR *pBuf = (UCHAR *)nullptr;
+//	ULONG32 nBytes = 1024;
+//	ULONG32 bufBytes = 1024;
+//	ULONG32 bufOffset = 0;
+//	for (int i = 0; i < thrdParam.size(); i++)
+//	{
+//		thrdParam.at(i).buffer = (char *)((char *)pBuf + bufOffset);
+//		thrdParam.at(i).bufBytes = bufBytes;
+//		thrdParam.at(i).fileBytes = 1024;
+//		thrdParam.at(i).fileDir = "桌面:\\";
+//
+//		bufOffset += bufBytes;
+//	}
+//	storeFileThreadPool.SetParameter(std::move(thrdParam));
+//
+//	DbgLog("启动线程池\n");
+//	g_pWnd->storeFileThreadPool.StartThread();
+//	DbgLog("等待线程池\n");
+//	g_pWnd->storeFileThreadPool.WaitThread();
+//	DbgLog("暂停线程池\n");
+//	g_pWnd->storeFileThreadPool.StopThread();
+//
+//	DbgLog("销毁线程池\n");
+//	storeFileThreadPool.DestroyThreadPool();
 //
 //	return 0;
 //}
