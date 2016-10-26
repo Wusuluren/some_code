@@ -3,6 +3,8 @@
 #include <vector>
 #include <Windows.h>
 
+//#include "TestCtpPcieCommon.h"
+
 //线程信息类
 //ThreadParam_t：线程参数信息结构体
 template <typename ThreadParam_t>
@@ -41,8 +43,14 @@ public:
 	void StopThread();
 	//休眠进程池所有进程
 	void WaitThread();
-	//设置进程池所有进程的参数
-	void SetParameter(std::vector<ThreadParam_t> p);
+	//设置进程池某个进程的参数
+	void SetParameter(const int &index, ThreadParam_t &p);
+	//得到进程池某个进程的参数
+	ThreadParam_t& GetParameter(const int &index);
+	//设置进程池全部进程的参数
+	void SetAllParameter(std::vector<ThreadParam_t> &p);
+	//返回线程池中的线程个数
+	int Size();
 
 private:
 	//线程池管理器
@@ -151,16 +159,31 @@ void ThreadPoolManager<ThreadParam_t>::WaitThread()
 }
 
 template <typename ThreadParam_t>
-void ThreadPoolManager<ThreadParam_t>::SetParameter(std::vector<ThreadParam_t> p)
+void ThreadPoolManager<ThreadParam_t>::SetParameter(const int &index, ThreadParam_t &p)
 {
-	for  (int i = 0; i < this->worker.size(); i++)
+	this->worker.at(index).parameter = p;
+}
+
+template <typename ThreadParam_t>
+ThreadParam_t& ThreadPoolManager<ThreadParam_t>::GetParameter(const int &index)
+{
+	return this->worker.at(index).parameter;
+}
+
+template <typename ThreadParam_t>
+int ThreadPoolManager<ThreadParam_t>::Size()
+{
+	return this->worker.size();
+}
+
+template <typename ThreadParam_t>
+void ThreadPoolManager<ThreadParam_t>::SetAllParameter(std::vector<ThreadParam_t> &p)
+{
+	int size = p.size();
+	for (int i = 0; i < size; i++)
 	{
-		this->worker.at(i).parameter.buffer = p.at(i).buffer;
-		this->worker.at(i).parameter.bufBytes = p.at(i).bufBytes;
-		this->worker.at(i).parameter.fileBytes = p.at(i).fileBytes;
-		this->worker.at(i).parameter.fileDir = p.at(i).fileDir;
-		this->worker.at(i).error = 0;
-	}
+		this->worker.at(i).parameter = p.at(i);
+	}	
 }
 
 
@@ -254,7 +277,7 @@ void ThreadPoolManager<ThreadParam_t>::SetParameter(std::vector<ThreadParam_t> p
 //
 //		bufOffset += bufBytes;
 //	}
-//	storeFileThreadPool.SetParameter(std::move(thrdParam));
+//	storeFileThreadPool.SetAllParameter(thrdParam);
 //
 //	DbgLog("启动线程池\n");
 //	g_pWnd->storeFileThreadPool.StartThread();
