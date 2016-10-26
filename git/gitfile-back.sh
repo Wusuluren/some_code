@@ -10,9 +10,9 @@ do
         c);&
         h);&
         rc);&
-        inf);&
-        sh);&
-        py);&
+		inf);&
+		sh);&
+		py);&
         txt);&
         makefile);&
         SOURCES)
@@ -23,4 +23,5 @@ do
 done
 
 echo "backup tar.gz"
+cp gitfile.tar.gz gitfile-bak.tar.gz
 tar zcvf gitfile.tar.gz gitfile > /dev/null

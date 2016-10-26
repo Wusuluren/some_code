@@ -1,16 +1,16 @@
 *
 
-!.txt
+!*.txt
 
 !*.cpp
 !*.c
 !*.h
 
 !*.rc
-!.inf
+!*.inf
 !SOURCES
 
 !makefile
-!.sh
+!*.sh
 
-!.py
+!*.py
