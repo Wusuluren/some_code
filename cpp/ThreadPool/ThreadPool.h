@@ -3,7 +3,6 @@
 #include <vector>
 #include <Windows.h>
 
-//#include "TestCtpPcieCommon.h"
 
 //线程信息类
 //ThreadParam_t：线程参数信息结构体
@@ -31,23 +30,23 @@ public:
 	ThreadPoolManager();
 	//析构函数
 	~ThreadPoolManager();
-	//创建进程池
+	//创建线程池
 	void CreateThreadPool(int number=0, LPTHREAD_START_ROUTINE threadProc=NULL);
-	//销毁进程池
+	//销毁线程池
 	void DestroyThreadPool();
-	//重置进程池中进程个数
+	//重置线程池中进程个数
 	void ResetThreadPool(int number=0, LPTHREAD_START_ROUTINE threadProc=NULL);
-	//启动进程池所有进程
+	//启动线程池所有进程
 	void StartThread();
-	//等待进程池所有进程完成工作
+	//等待线程池所有进程完成工作
 	void StopThread();
-	//休眠进程池所有进程
+	//休眠线程池所有进程
 	void WaitThread();
-	//设置进程池某个进程的参数
+	//设置线程池某个进程的参数
 	void SetParameter(const int &index, ThreadParam_t &p);
-	//得到进程池某个进程的参数
+	//得到线程池某个进程的参数
 	ThreadParam_t& GetParameter(const int &index);
-	//设置进程池全部进程的参数
+	//设置线程池全部进程的参数
 	void SetAllParameter(std::vector<ThreadParam_t> &p);
 	//返回线程池中的线程个数
 	int Size();
