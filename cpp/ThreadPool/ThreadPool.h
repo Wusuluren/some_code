@@ -190,58 +190,22 @@ void ThreadPoolManager<ThreadParam_t>::SetAllParameter(std::vector<ThreadParam_t
 //使用示例
 
 ////存储文件线程参数结构体
-//struct StoreFileThrdParam
+//struct ThrdParam
 //{
 //	char *buffer;
-//	ULONG32 bufBytes;
-//	ULONG32 fileBytes;
-//	CString fileDir;
 //};
 
-
-////DMA接收数据,保存数据到文件的线程,可能会保存多个文件
-//DWORD WINAPI StoreFileThreadProc(LPVOID lpThreadParameter)
+////
+//DWORD WINAPI ThreadProc(LPVOID lpThreadParameter)
 //{
-//	ThreadInfo<struct StoreFileThrdParam> * pParam = (ThreadInfo<struct StoreFileThrdParam> *)lpThreadParameter;
+//	ThreadInfo<struct ThrdParam> * pParam = (ThreadInfo<struct ThrdParam> *)lpThreadParameter;
 //
 //	while (true)
 //	{
 //		WaitForSingleObject(pParam->start, INFINITE);
 //		ResetEvent(pParam->start);
 //		
-//		//线程保存的文件个数
-//		int fileNumber = pParam->parameter.bufBytes / pParam->parameter.fileBytes;
-//		//线程的参数信息
-//		char *pBuf = pParam->parameter.buffer;
-//		ULONG32 bufOffset = 0;
-//		ULONG32 fileSize = pParam->parameter.fileBytes;
-//		//保存文件的目录
-//		wchar_t fileDir[MAX_PATH];	
-//		wcscpy(fileDir, (wchar_t *)pParam->parameter.fileDir.GetBuffer(pParam->parameter.fileDir.GetLength()));
-//
-//		for (int cnt = 0; cnt < fileNumber; cnt++)
-//		{
-//			do {
-//				wchar_t filePath[MAX_PATH];	
-//				swprintf(filePath, L"%ws\\dma(%d)-thread(%d)-file(%d).bin", fileDir, gDmaC2sCounter, pParam->id, cnt);
-//				//DbgLog("%d:线程池运行中，文件名是%S\n", pParam->id, filePath);
-//
-//				ULONG32 lWritten = 0;
-//				HandlePointer hFile((LPCWSTR)filePath);	
-//				if (hFile.Error())
-//				{
-//					DbgError("%d:创建文件出错\n", pParam->id);
-//					break;
-//				}
-//				WriteFile(hFile.get(), pBuf + bufOffset, fileSize, (LPDWORD)&lWritten, NULL);
-//				if (!lWritten)
-//				{
-//					pParam->error = 1;
-//					DbgError("%d:写文件出错\n", pParam->id);
-//				}
-//				bufOffset += fileSize;
-//			} while (0);
-//		}
+//		printf("%s from %d\n", pParam->parameter.buffer, pParam->id);
 //
 //		SetEvent(pParam->stop);
 //	}
@@ -253,40 +217,43 @@ void ThreadPoolManager<ThreadParam_t>::SetAllParameter(std::vector<ThreadParam_t
 //int main()
 //{
 //	//存储文件的线程池管理器
-//	ThreadPoolManager<struct StoreFileThrdParam> storeFileThreadPool;
+//	ThreadPoolManager<struct ThrdParam> threadPool;
 //
 //	//初始化保存文件的线程池
-//	DbgLog("创建线程池\n");
-//	int storeFileThreadNumber = 4;
-//	storeFileThreadPool.CreateThreadPool(storeFileThreadNumber, StoreFileThreadProc);
+//	printf("创建线程池\n");
+//	int threadNumber = 4;
+//	threadPool.CreateThreadPool(threadNumber, ThreadProc);
 //
 //	//重置保存文件的线程池中线程的参数信息
-//	DbgLog("设置线程池中各线程的参数\n");
-//	vector<struct StoreFileThrdParam> thrdParam(storeFileThreadNumber);
-//	UCHAR *pBuf = (UCHAR *)nullptr;
-//	ULONG32 nBytes = 1024;
-//	ULONG32 bufBytes = 1024;
-//	ULONG32 bufOffset = 0;
+//	printf("设置线程池中各线程的参数\n");
+//	vector<struct ThrdParam> thrdParam(threadNumber);
 //	for (int i = 0; i < thrdParam.size(); i++)
 //	{
-//		thrdParam.at(i).buffer = (char *)((char *)pBuf + bufOffset);
-//		thrdParam.at(i).bufBytes = bufBytes;
-//		thrdParam.at(i).fileBytes = 1024;
-//		thrdParam.at(i).fileDir = "桌面:\\";
-//
-//		bufOffset += bufBytes;
+//		thrdParam.at(i).buffer = (char *)malloc(sizeog(char) * 16);
+//		strcpy(thrdParam.at(i).buffer, "hello");
 //	}
-//	storeFileThreadPool.SetAllParameter(thrdParam);
+//	threadPool.SetAllParameter(thrdParam);
 //
-//	DbgLog("启动线程池\n");
-//	g_pWnd->storeFileThreadPool.StartThread();
-//	DbgLog("等待线程池\n");
-//	g_pWnd->storeFileThreadPool.WaitThread();
-//	DbgLog("暂停线程池\n");
-//	g_pWnd->storeFileThreadPool.StopThread();
+//	printf("启动线程池\n");
+//	threadPool.StartThread();
+//	printf("等待线程池\n");
+//	threadPool.WaitThread();
+//	Sleep(1000);
+//	printf("暂停线程池\n");
+//	threadPool.StopThread();
 //
-//	DbgLog("销毁线程池\n");
-//	storeFileThreadPool.DestroyThreadPool();
+////需要手动清理线程参数信息
+//	for (int i = 0; i < threadPool.Size(); i++)
+//	{
+//		struct ThrdParam p = threadPool.GetParameter(i);
+//		if (p.buffer)
+//		{
+//			free(p.buffer);
+//		}
+//	}
+//
+//	printf("销毁线程池\n");
+//	threadPool.DestroyThreadPool();
 //
 //	return 0;
 //}
