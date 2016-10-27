@@ -37,6 +37,10 @@ do
 
                 needBakup=1
             else
+                if [ ! -e $i ];then
+                    cp ../$i ./
+                    neeBack=1
+                fi
                 echo $fileNameVar=$fileOldMd5 >> md5sum.txt
             fi
 
