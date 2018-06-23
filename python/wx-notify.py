@@ -35,5 +35,6 @@ def send_msg(token, msg):
 if __name__ == '__main__':
     if len(sys.argv) > 0:
         load_config()
+        token = get_token()
         for msg in sys.argv[1:]:
-            send_msg(get_token(), msg)
+            send_msg(token, msg)
