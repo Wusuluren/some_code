@@ -15,13 +15,13 @@
     'use strict';
     
     setInterval(function(){
-      if(document.querySelector('#center_col > div:nth-child(5) > div:nth-child(1)')) {
+      if($('#center_col > div:nth-child(5) > div:nth-child(1)')) {
           $('#center_col > div:nth-child(5) > div:nth-child(1)').remove();
           clearInterval()
        }   
     }, 10)
     setInterval(function(){
-       if(document.querySelector('#rhs_block')) {
+       if($('#rhs_block')) {
           $("#rhs_block").remove();
           clearInterval()
        }
