@@ -15,13 +15,13 @@
     'use strict';
     
     setInterval(function(){
-      if(document.querySelector('#gs_res_ccl_bot > iframe:nth-child(4)')) {
+      if($('#gs_res_ccl_bot > iframe:nth-child(4)')) {
           $('#gs_res_ccl_bot > iframe:nth-child(4)').remove();
           clearInterval()
        }   
     }, 10)
     setInterval(function(){
-       if(document.querySelector('#gs_res_ccl_bot > iframe:nth-child(5)')) {
+       if($('#gs_res_ccl_bot > iframe:nth-child(5)')) {
           $('#gs_res_ccl_bot > iframe:nth-child(5)').remove();
           clearInterval()
        }
