@@ -13,10 +13,6 @@
 // ==/UserScript==
 (function () {
     'use strict';
- 
-    //$(function(){
-      //$('#center_col > div:nth-child(5) > div:nth-child(1)').remove(); $("#rhs_block").remove();   
-    //})
     
     setInterval(function(){
       if(document.querySelector('#center_col > div:nth-child(5) > div:nth-child(1)')) {
