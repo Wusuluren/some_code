@@ -14,16 +14,16 @@
 (function () {
     'use strict';
     
-    setInterval(function(){
+    var timer1 = setInterval(function(){
       if($('#center_col > div:nth-child(5) > div:nth-child(1)')) {
           $('#center_col > div:nth-child(5) > div:nth-child(1)').remove();
-          clearInterval()
+          clearInterval(timer1)
        }   
     }, 10)
-    setInterval(function(){
+    var timer2 = setInterval(function(){
        if($('#rhs_block')) {
           $("#rhs_block").remove();
-          clearInterval()
+          clearInterval(timer2)
        }
     }, 10)
  
