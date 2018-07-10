@@ -14,16 +14,16 @@
 (function () {
     'use strict';
     
-    setInterval(function(){
+    var timer1 = setInterval(function(){
       if($('#gs_res_ccl_bot > iframe:nth-child(4)')) {
           $('#gs_res_ccl_bot > iframe:nth-child(4)').remove();
-          clearInterval()
+          clearInterval(timer1)
        }   
     }, 10)
-    setInterval(function(){
+    var timer2 = setInterval(function(){
        if($('#gs_res_ccl_bot > iframe:nth-child(5)')) {
           $('#gs_res_ccl_bot > iframe:nth-child(5)').remove();
-          clearInterval()
+          clearInterval(timer2)
        }
     }, 10)
  
