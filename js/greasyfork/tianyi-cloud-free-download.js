@@ -13,6 +13,11 @@
     'use strict';
  
     $(function(){
-        $('.download-link').attr('href', window.downloadUrl)
-    }) 
+        var timer = setInterval(function() {
+          if(this.downloadUrl !== undefined) {
+             $('.download-link').attr('href', this.downloadUrl)
+             clearInterval(timer)
+          }
+        }, 100)
+    })
 })();
