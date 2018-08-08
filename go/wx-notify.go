@@ -1,23 +1,28 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/wusuluren/requests"
 	"github.com/wusuluren/requests/py"
+	"io"
 	"io/ioutil"
+	"mime/multipart"
+	"net/http"
 	"os"
 )
 
 type Config struct {
-	Corpid     string
-	Corpsecret string
-	Agentid    string
+	CorpId     string `json:"corpid"`
+	CorpSecret string `json:"corpsecret"`
+	AgentId    string `json:"agentid"`
 }
 
 var g Config
 
-func checkError(err error) {
+func die(err error) {
 	if err != nil {
 		panic(err)
 	}
@@ -28,9 +33,9 @@ func LoadConfig(filename string) {
 		filename = "wx-notify.json"
 	}
 	data, err := ioutil.ReadFile(filename)
-	checkError(err)
+	die(err)
 	err = json.Unmarshal(data, &g)
-	checkError(err)
+	die(err)
 	fmt.Println(g)
 }
 
@@ -39,7 +44,7 @@ func GetToken() string {
 		AccessToken string `json:"access_token"`
 	}
 	var respResult TokenResp
-	resp := requests.Get(fmt.Sprintf("https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=%s&corpsecret=%s", g.Corpid, g.Corpsecret), nil)
+	resp := requests.Get(fmt.Sprintf("https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=%s&corpsecret=%s", g.CorpId, g.CorpSecret), nil)
 	resp.Json(&respResult)
 	fmt.Println(respResult.AccessToken)
 	return respResult.AccessToken
@@ -50,16 +55,16 @@ func SendMsg(token, msg string) {
 		Content string `json:"content"`
 	}
 	type MsgReq struct {
-		Touser  string  `json:"touser"`
-		Msgtype string  `json:"msgtype"`
-		Agentid string  `json:"agentid"`
+		ToUser  string  `json:"touser"`
+		MsgType string  `json:"msgtype"`
+		AgentId string  `json:"agentid"`
 		Text    MsgText `json:"text"`
 		Safe    int     `json:"safe"`
 	}
 	data := MsgReq{
-		Touser:  "@all",
-		Msgtype: "text",
-		Agentid: g.Agentid,
+		ToUser:  "@all",
+		MsgType: "text",
+		AgentId: g.AgentId,
 		Text: MsgText{
 			Content: msg,
 		},
@@ -71,12 +76,128 @@ func SendMsg(token, msg string) {
 	fmt.Println(resp)
 }
 
+func CreateMultiPart(token, file string) (*http.Response, error) {
+	var err error
+	var b bytes.Buffer
+	var fw io.Writer
+	w := multipart.NewWriter(&b)
+	defer w.Close()
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	fw, err = w.CreateFormFile("media", file)
+	if err != nil {
+		return nil, err
+	}
+	_, err = io.Copy(fw, f)
+	if err != nil {
+		return nil, err
+	}
+	fw, err = w.CreateFormField(file)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", fmt.Sprintf("https://qyapi.weixin.qq.com/cgi-bin/media/upload?access_token=%s&type=file", token), &b)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	client := &http.Client{}
+	return client.Do(req)
+}
+
+func GetTmpMediaIdRaw(token, file string) (string, error) {
+	type MediaResp struct {
+		ErrCode   int    `json:"errcode""`
+		ErrMsg    string `json:"errmsg"`
+		Type      string `json:"type"`
+		MediaId   string `json:"media_id"`
+		CreatedAt string `json:"created_at"`
+	}
+	var mediaResp MediaResp
+	resp, err := CreateMultiPart(token, file)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	raw, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	err = json.Unmarshal(raw, &mediaResp)
+	if err != nil {
+		return "", err
+	}
+	return mediaResp.MediaId, nil
+
+}
+
+func GetTmpMediaId(token, file string) (string, error) {
+	type MediaResp struct {
+		ErrCode   int    `json:"errcode""`
+		ErrMsg    string `json:"errmsg"`
+		Type      string `json:"type"`
+		MediaId   string `json:"media_id"`
+		CreatedAt string `json:"created_at"`
+	}
+	var mediaResp MediaResp
+	params := make(py.Dict)
+	params["files"] = map[string]string{
+		"media": file,
+	}
+	requests.Post(fmt.Sprintf("https://qyapi.weixin.qq.com/cgi-bin/media/upload?access_token=%s&type=file", token), params).Json(&mediaResp)
+	fmt.Println(mediaResp)
+	return mediaResp.MediaId, nil
+}
+
+func SendFile(token, file string) {
+	type MsgFile struct {
+		MediaId     string `json:"media_id""`
+		Title       string `json:"title"`
+		Description string `json:"description"`
+	}
+	type FileReq struct {
+		ToUser  string  `json:"touser"`
+		ToParty string  `json:"toparty"`
+		ToTag   string  `json:"totag"`
+		MsgType string  `json:"msgtype"`
+		AgentId string  `json:"agentid"`
+		File    MsgFile `json:"file"`
+		Safe    int     `json:"safe"`
+	}
+	mediaId, err := GetTmpMediaId(token, file)
+	die(err)
+	data := FileReq{
+		ToUser:  "@all",
+		MsgType: "file",
+		AgentId: g.AgentId,
+		File: MsgFile{
+			MediaId:     mediaId,
+			Title:       file,
+			Description: file,
+		},
+		Safe: 0,
+	}
+	params := make(py.Dict)
+	params["json"] = data
+	resp := requests.Post(fmt.Sprintf("https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=%s", token), params).Text()
+	fmt.Println(resp)
+}
+
 func main() {
-	if len(os.Args) > 1 {
+	fileFlag := flag.Bool("f", false, "send file")
+	flag.Parse()
+	if flag.NArg() > 0 {
 		LoadConfig("")
 		token := GetToken()
-		for _, arg := range os.Args[1:] {
-			SendMsg(token, arg)
+		for _, arg := range flag.Args() {
+			if *fileFlag {
+				SendFile(token, arg)
+			} else {
+				SendMsg(token, arg)
+			}
 		}
 	}
 }
