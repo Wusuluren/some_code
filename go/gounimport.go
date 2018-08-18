@@ -43,16 +43,24 @@ func main() {
 	importPkgs := make([]*ImportPkg, 0, len(f.Imports))
 	importPkgUsed := make(map[string]bool)
 	for _, importSpec := range f.Imports {
-		pkgName := importSpec.Path.Value[1 : len(importSpec.Path.Value)-1]
-		pkgNameSplit := strings.Split(pkgName, "/")
-		pkgName = pkgNameSplit[len(pkgNameSplit)-1]
-
+		var pkgName string
+		if importSpec.Name != nil {
+			pkgName = importSpec.Name.Name
+		} else {
+			pkgName = importSpec.Path.Value[1: len(importSpec.Path.Value)-1]
+			pkgNameSplit := strings.Split(pkgName, "/")
+			pkgName = pkgNameSplit[len(pkgNameSplit)-1]
+		}
+		if pkgName == "_" {
+			continue
+		}
 		importPkgUsed[pkgName] = false
 		importPkgs = append(importPkgs, &ImportPkg{
 			name: pkgName,
 			spec: importSpec,
 		})
 		numImportPkg++
+		fmt.Println(pkgName, importSpec)
 	}
 	for _, ident := range f.Unresolved {
 		if _, ok := importPkgUsed[ident.Name]; ok && importPkgUsed[ident.Name] == false {
