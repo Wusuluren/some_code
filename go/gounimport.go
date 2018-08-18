@@ -63,28 +63,29 @@ func main() {
 			}
 		}
 	}
+	if numImportPkg == 0 {
+		os.Exit(0)
+	}
 	rmPos := make([]*Pos, 0)
-	if numImportPkg > 0 {
-		for _, importPkg := range importPkgs {
-			if used, ok := importPkgUsed[importPkg.name]; ok && !used {
-				var i token.Pos
-				importSpec := importPkg.spec
-				for i = importSpec.Pos() - 1; i < importSpec.End()-1; i++ {
-					blob[i] = ' '
-				}
-				for i = importSpec.Pos() - 1; blob[i] != '\n'; i-- {
-				}
-				i += 1
-				if string(blob[i:i+6]) == "import" {
-					for j := i; j < i+6; j++ {
-						blob[j] = ' '
-					}
-				}
-				rmPos = append(rmPos, &Pos{
-					begin: i - 1,
-					end:   importSpec.End() - 1,
-				})
+	for _, importPkg := range importPkgs {
+		if used, ok := importPkgUsed[importPkg.name]; ok && !used {
+			var i token.Pos
+			importSpec := importPkg.spec
+			for i = importSpec.Pos() - 1; i < importSpec.End()-1; i++ {
+				blob[i] = ' '
 			}
+			for i = importSpec.Pos() - 1; blob[i] != '\n'; i-- {
+			}
+			i += 1
+			if string(blob[i:i+6]) == "import" {
+				for j := i; j < i+6; j++ {
+					blob[j] = ' '
+				}
+			}
+			rmPos = append(rmPos, &Pos{
+				begin: i - 1,
+				end:   importSpec.End() - 1,
+			})
 		}
 	}
 	var begin token.Pos
