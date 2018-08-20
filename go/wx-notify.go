@@ -189,14 +189,32 @@ func SendFile(token, file string) {
 func main() {
 	fileFlag := flag.Bool("f", false, "send file")
 	flag.Parse()
+	LoadConfig("")
+	token := GetToken()
 	if flag.NArg() > 0 {
-		LoadConfig("")
-		token := GetToken()
 		for _, arg := range flag.Args() {
 			if *fileFlag {
 				SendFile(token, arg)
 			} else {
 				SendMsg(token, arg)
+			}
+		}
+	} else {
+		var input string
+		var typo int
+		fmt.Println("input as following: %d[0=msg, 1=file, other=quit], %s")
+		for {
+			_, err := fmt.Scanf("%d, %s\n", &typo, &input)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			if typo == 0 {
+				SendMsg(token, input)
+			} else if typo == 1 {
+				SendFile(token, input)
+			} else {
+				break
 			}
 		}
 	}
