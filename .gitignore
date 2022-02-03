@@ -1,0 +1,6 @@
+.idea
+
+k8s/microservice/all.yml
+k8s/microservice/output
+k8s/microservice/logs
+k8s/microservice/pbgo

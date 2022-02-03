@@ -1,0 +1,2 @@
+gateway-http-addr: 127.0.0.1:9000
+time-grpc-addr: 127.0.0.1:9001
