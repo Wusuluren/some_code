@@ -4,7 +4,8 @@ metadata:
   name: gateway-ingress
 spec:
   rules:
-    - http:
+    - host: gateway.wav
+      http:
         paths:
           - path: /
             pathType: Prefix
@@ -12,4 +13,4 @@ spec:
               service:
                 name: gateway-service
                 port:
-                  number: 9000
+                  number: 80

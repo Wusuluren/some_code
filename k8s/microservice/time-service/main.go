@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -12,7 +16,10 @@ import (
 	"time"
 )
 
-var cfg config.Config
+var (
+	cfg          config.Config
+	zapLogger, _ = zap.NewProduction()
+)
 
 func main() {
 	initConf()
@@ -35,7 +42,12 @@ func startGrpcService() signal.CleanupHandler {
 		panic(err)
 	}
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_zap.UnaryServerInterceptor(zapLogger),
+			grpc_recovery.UnaryServerInterceptor(),
+		)),
+	)
 
 	timepb.RegisterTimeServiceServer(s, NewTimeServer())
 	reflection.Register(s)

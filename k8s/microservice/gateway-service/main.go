@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/gin-gonic/contrib/commonlog"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc"
 	"microservice/pbgo/timepb"
@@ -33,7 +34,7 @@ func initConf() {
 }
 
 func initTimeClient() signal.CleanupHandler {
-	conn, err := grpc.Dial(cfg.TimeGrpcAddr, grpc.WithInsecure())
+	conn, err := grpc.Dial(cfg.TimeSvcAddr, grpc.WithInsecure())
 	if err != nil {
 		panic(err)
 	}
@@ -46,11 +47,12 @@ func initTimeClient() signal.CleanupHandler {
 func startHttpService() signal.CleanupHandler {
 	router := gin.New()
 	router.Use(gin.Recovery())
+	router.Use(commonlog.New())
+
+	router.GET("/ping", ping)
 
 	timeRouter := router.Group("/time")
-	{
-		timeRouter.GET("/getTime", timeGetTime)
-	}
+	timeRouter.GET("/getTime", timeGetTime)
 
 	server := &http.Server{Addr: cfg.GateWayHttpAddr, Handler: router}
 	go func() {
@@ -62,6 +64,10 @@ func startHttpService() signal.CleanupHandler {
 	return func() {
 		server.Close()
 	}
+}
+
+func ping(ctx *gin.Context) {
+	ctx.JSON(200, "pong")
 }
 
 func timeGetTime(ctx *gin.Context) {
