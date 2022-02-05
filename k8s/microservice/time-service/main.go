@@ -30,7 +30,7 @@ func main() {
 
 func initConf() {
 	var err error
-	cfg, err = config.InitYamlConfig("all.yml")
+	cfg, err = config.InitYamlConfig("/conf/all.yml")
 	if err != nil {
 		panic(err)
 	}
@@ -71,7 +71,12 @@ func NewTimeServer() *TimeService {
 type TimeService struct{}
 
 func (t TimeService) GetTime(ctx context.Context, req *timepb.GetTimeReq) (*timepb.GetTimeResp, error) {
-	loc, err := time.LoadLocation(req.TimeZone)
+	timezone := "Local"
+	if req.TimeZone != "" {
+		timezone = req.TimeZone
+	}
+
+	loc, err := time.LoadLocation(timezone)
 	if err != nil {
 		return nil, err
 	}

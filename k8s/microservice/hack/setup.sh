@@ -22,5 +22,13 @@ minikube ssh
 echo "10.211.55.7 registry" >> /etc/hosts
 minikube addons enable ingress
 
-kubectl expose deployment time-app --port=9001 --name=time-app
+kubectl expose deployment time-app --port=9001 --name=time-service
 kubectl get svc | grep time-app
+
+kubectl expose deployment ip-app --port=9002 --name=ip-service
+kubectl get svc | grep ip-app
+
+kubectl expose service redis-cluster --port=6379 --name=redis-service
+kubectl get svc | grep redis-cluster
+
+kubectl create configmap app-config --from-file artifacts/config.yml

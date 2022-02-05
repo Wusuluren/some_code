@@ -19,6 +19,17 @@ spec:
           image: registry:5000/gateway-server
           ports:
           - containerPort: 9000
+          volumeMounts:
+            - name: config-volume
+              mountPath: /conf/all.yml
+              subPath: all.yml
+      volumes:
+        - name: config-volume
+          configMap:
+            name: app-config
+            items:
+              - key: all.yml
+                path: all.yml
 ---
 apiVersion: v1
 kind: Service
@@ -33,3 +44,20 @@ spec:
       targetPort: 9000
   selector:
     app: gateway
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway-ingress
+spec:
+  rules:
+    - host: gateway.wav
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway-service
+                port:
+                  number: 80

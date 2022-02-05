@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: time-app
+  name: ip-app
   labels:
-    app: time
+    app: ip
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: time
+      app: ip
   template:
     metadata:
       labels:
-        app: time
+        app: ip
     spec:
       containers:
-        - name: time-server
-          image: registry:5000/time-server
+        - name: ip-server
+          image: registry:5000/ip-server
           ports:
-            - containerPort: 9001
+            - containerPort: 9002
           volumeMounts:
               - name: config-volume
                 mountPath: /config
@@ -31,14 +31,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: time-service
+  name: ip-service
 spec:
   type: ClusterIP
-  clusterIP: 10.103.170.79
+  clusterIP: 10.99.212.118
   ports:
-    - name: time-ports
+    - name: ip-ports
       protocol: TCP
-      port: 9001
-      targetPort: 9001
+      port: 9002
+      targetPort: 9002
   selector:
-    app: time
+    app: ip

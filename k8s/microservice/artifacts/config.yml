@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  all.yml: |
+    gateway-http-addr: 0.0.0.0:9000
+    time-grpc-addr: 0.0.0.0:9001
+    time-svc-addr: 10.103.170.79:9001
+    ip-http-addr: 0.0.0.0:9002
+    ip-svc-addr: http://10.99.212.118:9002
+    redis-addrs: ['redis-cluster-0.redis-cluster.default.svc.cluster.local:6379']

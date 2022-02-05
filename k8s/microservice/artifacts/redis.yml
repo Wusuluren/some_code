@@ -1,0 +1,103 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: redis-pv1
+spec:
+  capacity:
+    storage: 100M
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: "redis-cluster"
+  local:
+    path: /home/data
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - minikube
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-cluster
+data:
+  redis.conf: |+
+    cluster-enabled no
+    cluster-require-full-coverage no
+    cluster-node-timeout 15000
+    cluster-config-file /data/nodes.conf
+    cluster-migration-barrier 1
+    appendonly yes
+    protected-mode no
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cluster
+spec:
+  serviceName: redis-cluster
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-cluster
+  template:
+    metadata:
+      labels:
+        app: redis-cluster
+    spec:
+      containers:
+      - name: redis
+        image: redis:5.0.5-alpine
+        ports:
+        - containerPort: 6379
+          name: client
+        - containerPort: 16379
+          name: gossip
+        command: ["redis-server", "/conf/redis.conf"]
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        volumeMounts:
+        - name: conf
+          mountPath: /conf
+          readOnly: false
+        - name: data
+          mountPath: /data
+          readOnly: false
+      volumes:
+      - name: conf
+        configMap:
+          name: redis-cluster
+          defaultMode: 0755
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100M
+      storageClassName: redis-cluster
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster
+spec:
+  type: ClusterIP
+  clusterIP: 10.96.0.106
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: client
+    - port: 16379
+      targetPort: 16379
+      name: gossip
+  selector:
+    app: redis-cluster

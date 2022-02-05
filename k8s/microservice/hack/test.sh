@@ -1,1 +1,2 @@
- curl "127.0.0.1:9000/time/getTime"
+curl "127.0.0.1:9000/time"
+curl "gate.way/time"

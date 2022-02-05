@@ -2,23 +2,30 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-gonic/contrib/commonlog"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis"
 	"google.golang.org/grpc"
+	"io/ioutil"
 	"microservice/pbgo/timepb"
 	"microservice/pkg/config"
 	"microservice/pkg/signal"
 	"net/http"
+	"time"
 )
 
-var timeClient struct {
-	client timepb.TimeServiceClient
-}
-
-var cfg config.Config
+var (
+	cfg        config.Config
+	redisCli   *redis.ClusterClient
+	timeClient struct {
+		client timepb.TimeServiceClient
+	}
+)
 
 func main() {
 	initConf()
+	initRedisClient(cfg.RedisAddrs)
 	var cleanupHandlers []signal.CleanupHandler
 	cleanupHandlers = append(cleanupHandlers, initTimeClient())
 	cleanupHandlers = append(cleanupHandlers, startHttpService())
@@ -27,10 +34,19 @@ func main() {
 
 func initConf() {
 	var err error
-	cfg, err = config.InitYamlConfig("all.yml")
+	cfg, err = config.InitYamlConfig("/conf/all.yml")
 	if err != nil {
+		fmt.Println(err.Error())
+		time.Sleep(time.Second * 30)
 		panic(err)
 	}
+	fmt.Printf("conf:%+v\n", cfg)
+}
+
+func initRedisClient(addrs []string) {
+	redisCli = redis.NewClusterClient(&redis.ClusterOptions{
+		Addrs: addrs,
+	})
 }
 
 func initTimeClient() signal.CleanupHandler {
@@ -48,11 +64,11 @@ func startHttpService() signal.CleanupHandler {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(commonlog.New())
+	router.Use(NewCounter())
 
-	router.GET("/ping", ping)
-
-	timeRouter := router.Group("/time")
-	timeRouter.GET("/getTime", timeGetTime)
+	router.GET("/ping", routerPing)
+	router.GET("/time", routerTime)
+	router.GET("/ip", routerIP)
 
 	server := &http.Server{Addr: cfg.GateWayHttpAddr, Handler: router}
 	go func() {
@@ -66,20 +82,50 @@ func startHttpService() signal.CleanupHandler {
 	}
 }
 
-func ping(ctx *gin.Context) {
-	ctx.JSON(200, "pong")
+func handleError(ctx *gin.Context, err error) {
+	fmt.Println(err)
+	ctx.String(500, err.Error())
+	// ctx.AbortWithError(500, err)
 }
 
-func timeGetTime(ctx *gin.Context) {
-	timezone := ctx.Param("timezone")
+func NewCounter() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next()
+
+		result, err := redisCli.Incr("counter").Result()
+		fmt.Println(result, err)
+	}
+}
+
+func routerPing(ctx *gin.Context) {
+	ctx.String(200, "pong")
+}
+
+func routerTime(ctx *gin.Context) {
+	timezone := ctx.Param("zone")
 	req := &timepb.GetTimeReq{
 		TimeZone: timezone,
 	}
 	resp, err := timeClient.client.GetTime(context.TODO(), req)
 	if err != nil {
-		ctx.AbortWithError(500, err)
+		handleError(ctx, err)
 		return
 	}
 	timeStr := resp.Time.AsTime().String()
-	ctx.JSON(200, timeStr)
+	ctx.String(200, timeStr)
+}
+
+func routerIP(ctx *gin.Context) {
+	resp, err := http.Get(cfg.IPSvcAddr + "/ip")
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	defer resp.Body.Close()
+	blob, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		handleError(ctx, err)
+		return
+	}
+	ctx.String(200, string(blob))
 }
