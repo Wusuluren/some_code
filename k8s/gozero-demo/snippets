@@ -1,0 +1,40 @@
+
+// gateway-service/internal/logic/time/gettimelogic.go
+func (l *GetTimeLogic) GetTime(req types.GetTimeReq) (resp string, err error) {
+	cli,err:=zrpc.NewClientWithTarget("127.0.0.1:8080")
+	if err!=nil{
+		panic(err)
+	}
+	srv:=timeservice.NewTimeService(cli)
+	in:=&timeservice.GetTimeReq{
+		TimeZone:             req.TimeZone,
+	}
+	out,err := srv.GetTime(context.TODO(), in)
+	if err!=nil{
+		panic(err)
+	}
+	return out.Time.AsTime().String(),nil
+}
+
+// time-service/internal/logic/gettimelogic.go
+func (l *GetTimeLogic) GetTime(in *timepb.GetTimeReq) (*timepb.GetTimeResp, error) {
+	req:=in
+	timezone := "Local"
+	if req.TimeZone != "" {
+		timezone = req.TimeZone
+	}
+
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now().In(loc)
+
+	resp := &timepb.GetTimeResp{
+		Time: &timestamppb.Timestamp{
+			Seconds: now.Unix(),
+			Nanos:   int32(now.UnixNano()),
+		},
+	}
+	return resp, nil
+}

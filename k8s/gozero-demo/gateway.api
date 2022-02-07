@@ -1,0 +1,11 @@
+type GetTimeReq {
+	TimeZone string `form:"timezone,optional"`
+}
+
+service gateway-api {
+	@server(
+		handler: GetTimeHandler
+		group: time
+	)
+	get /time/getTime(GetTimeReq) returns(string)
+}
