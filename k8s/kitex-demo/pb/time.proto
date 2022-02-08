@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package timepb;
+
+option go_package="pbgo/timepb";
+
+import "google/protobuf/timestamp.proto";
+
+service TimeService {
+    rpc GetTime (GetTimeReq) returns (GetTimeResp);
+}
+
+message GetTimeReq {
+    string TimeZone = 1;
+}
+
+message GetTimeResp {
+    google.protobuf.Timestamp Time = 1;
+}

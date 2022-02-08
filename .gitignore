@@ -9,3 +9,5 @@ k8s/gozero-demo/pb
 
 k8s/kratos-demo/gateway-service/bin
 k8s/kratos-demo/time-service/bin
+
+k8s/kitex-demo/time-service/output
