@@ -6,3 +6,6 @@ k8s/microservice/logs
 k8s/microservice/pbgo
 
 k8s/gozero-demo/pb
+
+k8s/kratos-demo/gateway-service/bin
+k8s/kratos-demo/time-service/bin

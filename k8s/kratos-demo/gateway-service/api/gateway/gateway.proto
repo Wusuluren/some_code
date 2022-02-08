@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package api.gateway;
+
+import "google/api/annotations.proto";
+
+option go_package = "gateway-service/api/gateway;gateway";
+
+service Gateway {
+	rpc GetTime (GetTimeRequest) returns (GetTimeReply)  {
+		option (google.api.http) = {
+            get: "/time/getTime"
+        };
+	}
+}
+
+message GetTimeRequest {
+	string timezone = 1;
+}
+
+message GetTimeReply {
+	string message = 1;
+}
+
