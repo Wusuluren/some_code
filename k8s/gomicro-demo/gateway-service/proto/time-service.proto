@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package timeservice;
+
+option go_package = "./proto;timeservice";
+
+service TimeService {
+	rpc GetTime (GetTimeRequest) returns (GetTimeReply);
+}
+
+message GetTimeRequest {
+	string timezone = 1;
+}
+
+message GetTimeReply {
+	string message = 1;
+}
