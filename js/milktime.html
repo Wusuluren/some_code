@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>宝宝记录</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-top: #faf0f2;
+            --bg-mid: #f0f4f8;
+            --bg-bottom: #eef1f7;
+            --surface-glass-4: rgba(255, 255, 255, 0.40);
+            --surface-glass-6: rgba(255, 255, 255, 0.60);
+            --surface-glass-7: rgba(255, 255, 255, 0.72);
+            --separator: rgba(60, 60, 67, 0.08);
+            --separator-heavy: rgba(60, 60, 67, 0.18);
+            --primary: #ff6b8a;
+            --primary-dim: rgba(255, 107, 138, 0.12);
+            --secondary: #5ac8fa;
+            --text: #1c1c1e;
+            --text-secondary: #8e8e93;
+            --text-tertiary: #aeaeb2;
+            --section-radius: 12px;
+            --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+            background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 40%, var(--bg-bottom) 100%);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            min-height: 100vh;
+            background-attachment: fixed;
+        }
+
+        /* subtle orbs for glass to blur */
+        body::before {
+            content: '';
+            position: fixed;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 107, 138, 0.10) 0%, transparent 70%);
+            top: -60px;
+            right: -80px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            width: 360px;
+            height: 360px;
+            background: radial-gradient(circle, rgba(90, 200, 250, 0.08) 0%, transparent 70%);
+            bottom: -100px;
+            left: -100px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 0 16px 100px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ─── Header (glass sticky) ─── */
+        .header {
+            padding: 56px 16px 12px;
+            margin: 0 -16px 0;
+            background: rgba(255, 255, 255, 0.40);
+            backdrop-filter: blur(32px) saturate(200%);
+            -webkit-backdrop-filter: blur(32px) saturate(200%);
+            border-bottom: 0.5px solid rgba(60, 60, 67, 0.06);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+        }
+
+        .header p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* ─── Segmented Control (glass) ─── */
+        .segmented-control {
+            display: flex;
+            background: rgba(60, 60, 67, 0.07);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 9px;
+            padding: 2px;
+            margin: 16px 0 20px;
+            position: relative;
+            height: 44px;
+        }
+
+        .segmented-control::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: calc(33.333% - 2px);
+            height: calc(100% - 4px);
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border-radius: 7px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 1px rgba(0,0,0,0.03);
+            transition: transform 0.4s var(--spring);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .segmented-control.tab-milk::before   { transform: translateX(0); }
+        .segmented-control.tab-poop::before   { transform: translateX(100%); }
+        .segmented-control.tab-history::before{ transform: translateX(200%); }
+
+        .segmented-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 7px;
+            position: relative;
+            z-index: 1;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            transition: color 0.15s;
+        }
+
+        .segmented-btn.active {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* ─── iOS Section (glass) ─── */
+        .ios-section {
+            background: var(--surface-glass-7);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            border-radius: var(--section-radius);
+            margin-bottom: 20px;
+            overflow: hidden;
+            border: 0.5px solid rgba(255, 255, 255, 0.55);
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+        }
+
+        .ios-section-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            padding: 16px 16px 6px;
+            margin: 0;
+        }
+
+        .ios-section-footer {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            padding: 6px 16px 10px;
+        }
+
+        /* ─── Form Row ─── */
+        .form-row {
+            display: flex;
+            gap: 0;
+            padding: 0 16px;
+        }
+
+        .form-row:first-of-type {
+            padding-top: 6px;
+        }
+
+        .form-row + .form-row {
+            border-top: 0.5px solid var(--separator);
+        }
+
+        .form-group {
+            flex: 1;
+            padding: 10px 0;
+        }
+
+        .form-group + .form-group {
+            border-left: 0.5px solid var(--separator);
+            padding-left: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 6px 0;
+            background: transparent;
+            border: none;
+            font-size: 16px;
+            font-family: inherit;
+            color: var(--text);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .form-group input[type="date"],
+        .form-group input[type="time"] {
+            min-width: 0;
+        }
+
+        .form-group input[type="date"]::-webkit-calendar-picker-indicator,
+        .form-group input[type="time"]::-webkit-calendar-picker-indicator {
+            opacity: 0.5;
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .form-group select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23aeaeb2' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right center;
+            padding-right: 20px;
+        }
+
+        /* ─── iOS Button ─── */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: var(--section-radius);
+            font-size: 17px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transition: opacity 0.2s;
+        }
+
+        .btn:active {
+            opacity: 0.7;
+        }
+
+        .btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .btn-milk {
+            background: linear-gradient(135deg, var(--primary) 0%, #ff8a9e 100%);
+            color: white;
+        }
+
+        .btn-poop {
+            background: linear-gradient(135deg, var(--secondary) 0%, #87d8fb 100%);
+            color: white;
+        }
+
+        .milk-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .milk-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: rgba(255, 107, 138, 0.04);
+            border: 0.5px solid rgba(255, 107, 138, 0.12);
+            border-radius: 12px;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .milk-row:focus-within {
+            border-color: rgba(255, 107, 138, 0.3);
+            background: rgba(255, 107, 138, 0.07);
+        }
+
+        .milk-row-time-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex: 0 0 auto;
+        }
+        .milk-row-icon {
+            font-size: 13px;
+            opacity: 0.5;
+        }
+        .milk-row-time-wrap input[type="time"] {
+            width: 88px;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text);
+            font-family: -apple-system, sans-serif;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+        }
+
+        .milk-row-amount-wrap {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            gap: 4px;
+        }
+        .milk-row-amount-wrap input[type="number"] {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text);
+            font-family: -apple-system, sans-serif;
+            outline: none;
+            -moz-appearance: textfield;
+        }
+        .milk-row-amount-wrap input::-webkit-outer-spin-button,
+        .milk-row-amount-wrap input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .milk-row-unit {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }
+
+        .milk-row-del {
+            flex: 0 0 auto;
+            width: 26px;
+            height: 26px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 59, 48, 0.08);
+            color: #ff3b30;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.15s ease, transform 0.15s ease;
+        }
+        .milk-row-del:active {
+            background: rgba(255, 59, 48, 0.2);
+            transform: scale(0.92);
+        }
+
+        .btn-add-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            padding: 9px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 107, 138, 0.06);
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: -apple-system, sans-serif;
+            cursor: pointer;
+            margin-bottom: 10px;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.15s ease;
+        }
+        .btn-add-row:active {
+            background: rgba(255, 107, 138, 0.12);
+        }
+
+        /* ─── Inline Action Button ─── */
+        .btn-inline {
+            background: transparent;
+            border: none;
+            font-size: 15px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            padding: 4px 8px;
+            white-space: nowrap;
+        }
+
+        .btn-inline:active {
+            opacity: 0.4;
+        }
+
+        .btn-delete {
+            color: #ff3b30;
+        }
+
+        /* ─── Stats ─── */
+        .stats {
+            display: flex;
+            gap: 0;
+            padding: 0 16px;
+        }
+
+        .stat-item {
+            flex: 1;
+            padding: 14px 0 16px;
+            text-align: center;
+        }
+
+        .stat-item + .stat-item {
+            border-left: 0.5px solid var(--separator);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+        }
+
+        .stat-item:nth-child(2) .stat-value {
+            color: var(--secondary);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        /* ─── Record List ─── */
+        .record-list {
+            overflow-y: auto;
+        }
+
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 11px 16px;
+            min-height: 48px;
+        }
+
+        .record-item + .record-item {
+            border-top: 0.5px solid var(--separator);
+        }
+
+        .record-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .record-time {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .record-detail {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-tertiary);
+        }
+
+        .empty-state .icon-large {
+            font-size: 48px;
+            margin-bottom: 8px;
+            opacity: 0.4;
+        }
+
+        .empty-state p {
+            font-size: 15px;
+        }
+
+        /* ─── Date Groups ─── */
+        .date-group {
+            padding-top: 6px;
+        }
+
+        .date-group + .date-group {
+            border-top: 0.5px solid var(--separator);
+            margin-top: 4px;
+            padding-top: 12px;
+        }
+
+        .date-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            padding: 0 16px 4px;
+        }
+
+        .daily-stats {
+            display: flex;
+            gap: 12px;
+            padding: 0 16px 6px;
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        /* ─── Summary Card ─── */
+        .summary-card {
+            cursor: pointer;
+            user-select: none;
+            padding: 0;
+        }
+
+        .summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .summary-header:active {
+            opacity: 0.5;
+        }
+
+        .summary-header .chevron {
+            font-size: 18px;
+            color: var(--text-tertiary);
+            transition: transform 0.3s var(--spring);
+            font-weight: 300;
+        }
+
+        .summary-header .chevron.expanded {
+            transform: rotate(90deg);
+        }
+
+        .summary-body {
+            display: none;
+            padding: 0 16px 16px;
+        }
+
+        .summary-body.open {
+            display: block;
+            animation: fadeIn 0.25s var(--smooth);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: rgba(255, 255, 255, 0.30);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .summary-item {
+            background: var(--surface-glass-6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            text-align: center;
+            padding: 14px 8px;
+        }
+
+        .summary-item .value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+        }
+
+        .summary-item .label {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        .summary-item:nth-child(2) .value { color: var(--secondary); }
+
+        .summary-breakdown { margin-bottom: 14px; }
+
+        .summary-year-group { margin-bottom: 10px; }
+        .summary-year-group:last-child { margin-bottom: 0; }
+
+        .summary-year-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .summary-month-row,
+        .summary-day-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .summary-month-row { padding: 4px 0 4px 10px; }
+        .summary-day-row   { padding: 3px 0 3px 24px; color: var(--text-tertiary); font-size: 12px; }
+
+        .summary-month-row span:last-child,
+        .summary-day-row span:last-child {
+            text-align: right;
+            min-width: 150px;
+        }
+
+        .summary-month-label { font-weight: 500; min-width: 50px; }
+        .summary-day-row span:first-child { min-width: 50px; }
+
+        /* ─── Chart ─── */
+        .summary-chart-wrapper {
+            margin-top: 0;
+            position: relative;
+            height: 200px;
+            width: 100%;
+            overflow: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        .summary-chart-wrapper canvas {
+            width: 100% !important;
+            height: 200px !important;
+        }
+
+        .chart-range-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2px 10px;
+        }
+        .chart-range-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .chart-range-slider-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            margin-left: 10px;
+        }
+        .chart-range-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 107, 138, 0.2);
+            outline: none;
+        }
+        .chart-range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px rgba(255, 107, 138, 0.4);
+        }
+        .chart-range-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px rgba(255, 107, 138, 0.4);
+        }
+        .chart-range-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+            min-width: 36px;
+            text-align: right;
+        }
+
+        /* ─── Toast (glass) ─── */
+        .toast {
+            position: fixed;
+            bottom: 44px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            color: white;
+            padding: 13px 26px;
+            border-radius: 13px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            opacity: 0;
+            transition: opacity 0.35s var(--smooth), transform 0.4s var(--spring);
+            pointer-events: none;
+            z-index: 999;
+            white-space: nowrap;
+            letter-spacing: -0.01em;
+            border: 0.5px solid rgba(255, 255, 255, 0.10);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ─── Animations ─── */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: slideUp 0.3s var(--smooth);
+        }
+
+        /* ─── Reduced Motion ─── */
+        @media (prefers-reduced-motion: reduce) {
+            *, .segmented-control::before {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 420px) {
+            .header { padding: 40px 16px 10px; }
+            .header h1 { font-size: 28px; }
+            .container { padding: 0 12px 80px; }
+            .summary-chart-wrapper { height: 180px; }
+            .summary-chart-wrapper canvas { height: 180px !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>宝宝记录</h1>
+            <p>记录每一天的成长</p>
+        </div>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control tab-milk" id="segmented-control">
+            <button class="segmented-btn active" data-tab="milk">🍼 吃奶</button>
+            <button class="segmented-btn" data-tab="poop">💩 大便</button>
+            <button class="segmented-btn" data-tab="history">📋 记录</button>
+        </div>
+
+        <!-- Tab: Milk -->
+        <div id="tab-milk" class="tab-content active">
+            <div class="ios-section">
+                <div class="ios-section-header">🍼 记录吃奶</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>日期</label>
+                        <input type="date" id="milk-date">
+                    </div>
+                    <div class="form-group">
+                        <label>类型</label>
+                        <select id="milk-type">
+                            <option value="奶粉" selected>奶粉</option>
+                            <option value="母乳">母乳</option>
+                            <option value="混合">混合</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="milk-rows" id="milk-rows">
+                    <div class="milk-row">
+                        <div class="milk-row-time-wrap">
+                            <span class="milk-row-icon">🕐</span>
+                            <input type="time" class="milk-row-time" value="">
+                        </div>
+                        <div class="milk-row-amount-wrap">
+                            <input type="number" class="milk-row-amount" placeholder="奶量" min="0">
+                            <span class="milk-row-unit">ml</span>
+                        </div>
+                        <button class="milk-row-del" onclick="removeMilkRow(this)" aria-label="删除">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <button class="btn-add-row" onclick="addMilkRow()">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1V13M1 7H13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    添加一条
+                </button>
+                <button class="btn btn-milk" id="btn-milk" onclick="addMilk()">记录</button>
+            </div>
+
+            <div class="ios-section">
+                <div class="ios-section-header">📊 今日统计</div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="today-milk-count">0</div>
+                        <div class="stat-label">吃奶次数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="today-milk-total">0</div>
+                        <div class="stat-label">总奶量 (ml)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Poop -->
+        <div id="tab-poop" class="tab-content">
+            <div class="ios-section">
+                <div class="ios-section-header">💩 记录大便</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>日期</label>
+                        <input type="date" id="poop-date">
+                    </div>
+                    <div class="form-group">
+                        <label>时间</label>
+                        <input type="time" id="poop-time">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>性状</label>
+                        <select id="poop-shape">
+                            <option value="正常">正常</option>
+                            <option value="偏稀">偏稀</option>
+                            <option value="偏干">偏干</option>
+                            <option value="水样">水样</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-poop" id="btn-poop" onclick="addPoop()">记录</button>
+            </div>
+        </div>
+
+        <!-- Tab: History -->
+        <div id="tab-history" class="tab-content">
+            <div class="ios-section summary-card" onclick="toggleSummary()">
+                <div class="summary-header">
+                    <span>📊 全部汇总</span>
+                    <span class="chevron" id="summary-chevron">›</span>
+                </div>
+                <div class="summary-body" id="summary-body">
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <div class="value" id="summary-milk-count">0</div>
+                            <div class="label">喂奶次数</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="value" id="summary-milk-total">0</div>
+                            <div class="label">总奶量 (ml)</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="value" id="summary-poop-count">0</div>
+                            <div class="label">大便次数</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="value" id="summary-day-count">0</div>
+                            <div class="label">记录天数</div>
+                        </div>
+                    </div>
+                    <div class="summary-breakdown" id="summary-breakdown"></div>
+                    <div class="summary-chart-wrapper" id="summary-chart-wrapper">
+                        <div class="chart-range-bar">
+                            <span class="chart-range-label">展示天数</span>
+                            <div class="chart-range-slider-wrap">
+                                <input type="range" id="chart-range-slider" class="chart-range-slider" min="1" max="14" value="14" step="1">
+                                <span class="chart-range-value" id="chart-range-value">14天</span>
+                            </div>
+                        </div>
+                        <canvas id="daily-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="ios-section">
+                <div class="ios-section-header">📋 历史记录</div>
+                <div class="record-list" id="record-list">
+                    <div class="empty-state">
+                        <div class="icon-large">📝</div>
+                        <p>暂无记录</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let dailyChart = null;
+        let currentRange = 14;
+        let allRecords = [];
+
+        const encouragements = [
+            '老婆辛苦了 ❤️',
+            '又是被爱包围的一天 ☀️',
+            '每一口都是爱 🍼',
+            '今天也是满分宝宝 ✨',
+            '老婆是超人🦸‍♀️',
+            '有你们真好 🏠',
+            '今天的记录满分 📝',
+            '来杯好茶摇一摇，摇一摇 🍵',
+            '心静自然凉 🍃',
+        ];
+
+        const GITHUB_TOKEN = '';
+        const GIST_ID = '';
+        const API_BASE = 'https://api.github.com';
+
+        function showToast() {
+            const el = document.getElementById('toast');
+            const msg = encouragements[Math.floor(Math.random() * encouragements.length)];
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(el._timer);
+            el._timer = setTimeout(() => el.classList.remove('show'), 2200);
+        }
+
+        async function apiRequest(url, options = {}) {
+            return fetch(url, {
+                ...options,
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
+            });
+        }
+
+        async function fetchRecords() {
+            try {
+                const res = await apiRequest(`${API_BASE}/gists/${GIST_ID}`);
+                if (!res.ok) throw new Error('获取数据失败');
+                const data = await res.json();
+                const content = data.files['records.json']?.content || '[]';
+                return JSON.parse(content);
+            } catch (e) {
+                console.error('Fetch error:', e);
+                return [];
+            }
+        }
+
+        async function saveRecords(records) {
+            const res = await apiRequest(`${API_BASE}/gists/${GIST_ID}`, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    files: {
+                        'records.json': {
+                            content: JSON.stringify(records, null, 2)
+                        }
+                    }
+                })
+            });
+            if (!res.ok) throw new Error('保存数据失败');
+        }
+
+        function getToday() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toTimeString().slice(0, 5);
+        }
+
+        // Segmented Control
+        document.getElementById('segmented-control').addEventListener('click', function(e) {
+            const btn = e.target.closest('.segmented-btn');
+            if (!btn) return;
+
+            const tab = btn.dataset.tab;
+            this.className = 'segmented-control tab-' + tab;
+
+            document.querySelectorAll('.segmented-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+
+            if (tab === 'history') {
+                renderRecords();
+            }
+        });
+
+        function addMilkRow() {
+            const container = document.getElementById('milk-rows');
+            const row = document.createElement('div');
+            row.className = 'milk-row';
+            row.innerHTML = `
+                <div class="milk-row-time-wrap">
+                    <span class="milk-row-icon">🕐</span>
+                    <input type="time" class="milk-row-time" value="">
+                </div>
+                <div class="milk-row-amount-wrap">
+                    <input type="number" class="milk-row-amount" placeholder="奶量" min="0">
+                    <span class="milk-row-unit">ml</span>
+                </div>
+                <button class="milk-row-del" onclick="removeMilkRow(this)" aria-label="删除">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+            `;
+            container.appendChild(row);
+        }
+
+        function removeMilkRow(btn) {
+            const container = document.getElementById('milk-rows');
+            if (container.children.length <= 1) return;
+            btn.closest('.milk-row').remove();
+        }
+
+        async function addMilk() {
+            const date = document.getElementById('milk-date').value;
+            const type = document.getElementById('milk-type').value;
+
+            if (!date) {
+                alert('请填写日期');
+                return;
+            }
+
+            const rows = document.querySelectorAll('#milk-rows .milk-row');
+            const entries = [];
+            rows.forEach(row => {
+                const time = row.querySelector('.milk-row-time').value;
+                const amount = row.querySelector('.milk-row-amount').value;
+                if (time && amount) {
+                    entries.push({ time, amount: parseInt(amount) });
+                }
+            });
+
+            if (entries.length === 0) {
+                alert('请至少填写一条时间和奶量');
+                return;
+            }
+
+            const btn = document.getElementById('btn-milk');
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
+            try {
+                const baseId = Date.now();
+                entries.forEach((entry, i) => {
+                    allRecords.push({
+                        id: baseId + i,
+                        type: 'milk',
+                        time: entry.time,
+                        amount: entry.amount,
+                        milkType: type,
+                        date: date
+                    });
+                });
+                await saveRecords(allRecords);
+                document.getElementById('milk-rows').innerHTML = `
+                    <div class="milk-row">
+                        <div class="milk-row-time-wrap">
+                            <span class="milk-row-icon">🕐</span>
+                            <input type="time" class="milk-row-time" value="">
+                        </div>
+                        <div class="milk-row-amount-wrap">
+                            <input type="number" class="milk-row-amount" placeholder="奶量" min="0">
+                            <span class="milk-row-unit">ml</span>
+                        </div>
+                        <button class="milk-row-del" onclick="removeMilkRow(this)" aria-label="删除">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                `;
+                updateTodayStats();
+                showToast();
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '记录';
+            }
+        }
+
+        async function addPoop() {
+            const date = document.getElementById('poop-date').value;
+            const time = document.getElementById('poop-time').value;
+            const shape = document.getElementById('poop-shape').value;
+
+            if (!date || !time) {
+                alert('请填写日期和时间');
+                return;
+            }
+
+            const btn = document.getElementById('btn-poop');
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
+            try {
+                allRecords.push({
+                    id: Date.now(),
+                    type: 'poop',
+                    time: time,
+                    shape: shape,
+                    date: date
+                });
+                await saveRecords(allRecords);
+                showToast();
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '记录';
+            }
+        }
+
+        async function deleteRecord(id) {
+            if (!confirm('确定删除这条记录？')) return;
+            try {
+                allRecords = allRecords.filter(r => r.id !== id);
+                await saveRecords(allRecords);
+                renderRecords();
+                updateTodayStats();
+            } catch (e) {
+                alert('删除失败: ' + e.message);
+            }
+        }
+
+        function toggleSummary() {
+            const body = document.getElementById('summary-body');
+            const chevron = document.getElementById('summary-chevron');
+            const wasClosed = !body.classList.contains('open');
+            body.classList.toggle('open');
+            chevron.classList.toggle('expanded');
+            if (wasClosed) {
+                setTimeout(() => renderDailyChart(), 120);
+            }
+        }
+
+        document.getElementById('chart-range-slider').addEventListener('input', (e) => {
+            currentRange = parseInt(e.target.value);
+            document.getElementById('chart-range-value').textContent = currentRange + '天';
+            renderDailyChart();
+        });
+
+        function renderSummary() {
+            const milkRecords = allRecords.filter(r => r.type === 'milk');
+            const poopRecords = allRecords.filter(r => r.type === 'poop');
+            const milkCount = milkRecords.length;
+            const milkTotal = milkRecords.reduce((s, r) => s + r.amount, 0);
+            const poopCount = poopRecords.length;
+            const dayCount = new Set(allRecords.map(r => r.date)).size;
+
+            document.getElementById('summary-milk-count').textContent = milkCount;
+            document.getElementById('summary-milk-total').textContent = milkTotal;
+            document.getElementById('summary-poop-count').textContent = poopCount;
+            document.getElementById('summary-day-count').textContent = dayCount;
+
+            // Build year > month > day breakdown
+            const yearMap = {};
+            allRecords.forEach(r => {
+                const [y, m] = r.date.split('-');
+                if (!yearMap[y]) yearMap[y] = {};
+                if (!yearMap[y][m]) yearMap[y][m] = [];
+                yearMap[y][m].push(r);
+            });
+
+            let html = '';
+            Object.keys(yearMap).sort().reverse().forEach(year => {
+                const months = yearMap[year];
+                let yearMilkCount = 0, yearMilkTotal = 0, yearPoopCount = 0, yearDaySet = new Set();
+
+                html += `<div class="summary-year-group">`;
+                html += `<div class="summary-year-title">${year}年</div>`;
+
+                Object.keys(months).sort().reverse().forEach(month => {
+                    const records = months[month];
+
+                    const dayMap = {};
+                    records.forEach(r => {
+                        if (!dayMap[r.date]) dayMap[r.date] = [];
+                        dayMap[r.date].push(r);
+                    });
+
+                    const mCount = records.filter(r => r.type === 'milk').length;
+                    const mTotal = records.filter(r => r.type === 'milk').reduce((s, r) => s + r.amount, 0);
+                    const pCount = records.filter(r => r.type === 'poop').length;
+                    const daySet = new Set(records.map(r => r.date));
+
+                    yearMilkCount += mCount;
+                    yearMilkTotal += mTotal;
+                    yearPoopCount += pCount;
+                    records.forEach(r => yearDaySet.add(r.date));
+
+                    html += `<div class="summary-month-row">
+                        <span class="summary-month-label">${parseInt(month)}月 (${daySet.size}天)</span>
+                        <span>🍼${mCount}次 ${mTotal}ml  💩${pCount}次</span>
+                    </div>`;
+
+                    Object.keys(dayMap).sort().reverse().forEach(date => {
+                        const dayRecords = dayMap[date];
+                        const dMilk = dayRecords.filter(r => r.type === 'milk');
+                        const dPoop = dayRecords.filter(r => r.type === 'poop');
+                        const dCount = dMilk.length;
+                        const dTotal = dMilk.reduce((s, r) => s + r.amount, 0);
+                        const dPCount = dPoop.length;
+                        html += `<div class="summary-day-row">
+                            <span>${parseInt(month)}月${date.slice(8)}日</span>
+                            <span>🍼${dCount}次 ${dTotal}ml  💩${dPCount}次</span>
+                        </div>`;
+                    });
+                });
+
+                html += `<div class="summary-month-row" style="color:var(--text);font-weight:600;border-top:1px solid var(--separator);padding-top:4px;margin-top:2px;">
+                    <span>${year}年 合计 (${yearDaySet.size}天)</span>
+                    <span>🍼${yearMilkCount}次 ${yearMilkTotal}ml  💩${yearPoopCount}次</span>
+                </div>`;
+                html += `</div>`;
+            });
+
+            document.getElementById('summary-breakdown').innerHTML = html;
+
+            const body = document.getElementById('summary-body');
+            if (body.classList.contains('open')) {
+                renderDailyChart();
+            }
+        }
+
+        function renderDailyChart() {
+            if (allRecords.length === 0) return;
+
+            const dayMap = {};
+            allRecords.forEach(r => {
+                if (!dayMap[r.date]) dayMap[r.date] = [];
+                dayMap[r.date].push(r);
+            });
+
+            const sortedDays = Object.keys(dayMap).sort();
+            const totalDays = sortedDays.length;
+            const slider = document.getElementById('chart-range-slider');
+            slider.max = Math.max(totalDays, 1);
+            if (currentRange > totalDays) currentRange = totalDays;
+            slider.value = currentRange;
+            document.getElementById('chart-range-value').textContent = currentRange + '天';
+            const recentDays = sortedDays.slice(-currentRange);
+            const labels = recentDays.map(d => d.slice(5));
+            const milkData = recentDays.map(d =>
+                dayMap[d].filter(r => r.type === 'milk').reduce((s, r) => s + r.amount, 0)
+            );
+            const poopData = recentDays.map(d =>
+                dayMap[d].filter(r => r.type === 'poop').length
+            );
+
+            const canvas = document.getElementById('daily-chart');
+            if (dailyChart) {
+                dailyChart.destroy();
+            }
+
+            dailyChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '奶量 (ml)',
+                        data: milkData,
+                        backgroundColor: 'rgba(255, 107, 138, 0.55)',
+                        borderColor: 'rgba(255, 107, 138, 0.9)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        maxBarThickness: 32,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    devicePixelRatio: window.devicePixelRatio || 1,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index',
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.72)',
+                            backdropFilter: 'blur(12px)',
+                            titleFont: { size: 12, family: '-apple-system' },
+                            bodyFont: { size: 12, family: '-apple-system' },
+                            padding: 8,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: {
+                                title: (items) => items[0].label,
+                                label: (item) => `奶量: ${item.parsed.y}ml`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: {
+                                font: { size: 9, family: '-apple-system' },
+                                color: '#aeaeb2',
+                                maxRotation: 0,
+                                autoSkip: true,
+                                autoSkipPadding: 8,
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(60,60,67,0.06)' },
+                            border: { display: false },
+                            ticks: {
+                                font: { size: 9, family: '-apple-system' },
+                                color: '#aeaeb2',
+                                maxTicksLimit: 5,
+                                callback: (v) => v + 'ml'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTodayStats() {
+            const today = getToday();
+            const todayMilk = allRecords.filter(r => r.date === today && r.type === 'milk');
+            document.getElementById('today-milk-count').textContent = todayMilk.length;
+            document.getElementById('today-milk-total').textContent =
+                todayMilk.reduce((sum, r) => sum + r.amount, 0);
+        }
+
+        function renderRecords() {
+            renderSummary();
+
+            const records = [...allRecords].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+            const list = document.getElementById('record-list');
+
+            if (records.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon-large">📝</div>
+                        <p>暂无记录</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const grouped = {};
+            records.forEach(r => {
+                if (!grouped[r.date]) grouped[r.date] = [];
+                grouped[r.date].push(r);
+            });
+
+            let html = '';
+            Object.keys(grouped).sort().reverse().forEach(date => {
+                html += `<div class="date-group">`;
+                html += `<div class="date-header">${date}</div>`;
+
+                const dayRecords = grouped[date];
+                const milkCount = dayRecords.filter(r => r.type === 'milk').length;
+                const milkTotal = dayRecords.filter(r => r.type === 'milk').reduce((s, r) => s + r.amount, 0);
+                const poopCount = dayRecords.filter(r => r.type === 'poop').length;
+                html += `<div class="daily-stats"><span>🍼${milkCount}次 ${milkTotal}ml</span><span>💩${poopCount}次</span></div>`;
+
+                dayRecords.forEach(r => {
+                    const icon = r.type === 'milk' ? '🍼' : '💩';
+                    const detail = r.type === 'milk'
+                        ? `${r.milkType} ${r.amount}ml`
+                        : r.shape;
+
+                    html += `
+                        <div class="record-item">
+                            <div class="record-info">
+                                <div class="record-time">${icon} ${r.time}</div>
+                                <div class="record-detail">${detail}</div>
+                            </div>
+                            <button class="btn-inline btn-delete" onclick="deleteRecord(${r.id})">删除</button>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+            });
+
+            list.innerHTML = html;
+        }
+
+        async function init() {
+            const today = getToday();
+            document.getElementById('milk-date').value = today;
+            const firstRow = document.querySelector('#milk-rows .milk-row-time');
+            if (firstRow) firstRow.value = getCurrentTime();
+            document.getElementById('poop-date').value = today;
+            document.getElementById('poop-time').value = getCurrentTime();
+
+            try {
+                allRecords = await fetchRecords();
+                updateTodayStats();
+            } catch (e) {
+                console.error('Init error:', e);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
