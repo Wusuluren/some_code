@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "claude-expert": {
+      "command": "python3",
+      "args": [
+        "~/.agents/mcps/claude-bridge/server.py"
+      ]
+    }
+  }
+}
