@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>豪密·互联网版 — 流密码加密工具</title>
+<style>
+:root {
+  --bg-0: #070b14;
+  --bg-1: #0d1424;
+  --bg-2: #131c30;
+  --border: #1f2b45;
+  --text: #e6edf7;
+  --text-dim: #8b9bb8;
+  --text-mute: #5b6b88;
+  --accent: #22d3ee;
+  --accent-2: #fbbf24;
+  --ok: #34d399;
+  --err: #f87171;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 40px 20px 60px;
+  background: radial-gradient(circle at 20% 0%, #122036 0%, var(--bg-0) 55%);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+               "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  min-height: 100vh;
+  line-height: 1.5;
+}
+.container { max-width: 820px; margin: 0 auto; }
+header { text-align: center; margin-bottom: 32px; }
+h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: 1px; font-weight: 600; }
+h1 .hl { color: var(--accent); }
+.subtitle {
+  color: var(--text-dim); font-size: 12px; margin: 0;
+  font-family: var(--mono); letter-spacing: .4px;
+}
+.card {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,.5);
+}
+.tabs { display: flex; background: var(--bg-2); border-bottom: 1px solid var(--border); }
+.tab {
+  flex: 1; padding: 15px; text-align: center; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--text-mute);
+  border-bottom: 2px solid transparent; transition: all .15s;
+  user-select: none; letter-spacing: .4px;
+}
+.tab:hover { color: var(--text-dim); background: rgba(255,255,255,.02); }
+.tab.active {
+  color: var(--accent); border-bottom-color: var(--accent); background: var(--bg-1);
+}
+.panel { display: none; padding: 26px; }
+.panel.active { display: block; animation: fadeIn .2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+label {
+  display: block; font-size: 11px; font-weight: 600;
+  color: var(--text-dim); margin: 18px 0 7px;
+  text-transform: uppercase; letter-spacing: .9px;
+  font-family: var(--mono);
+}
+label:first-child { margin-top: 0; }
+textarea, input[type="password"] {
+  width: 100%; padding: 12px 14px;
+  background: var(--bg-0);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+textarea {
+  resize: vertical; min-height: 100px;
+  line-height: 1.6;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+textarea:focus, input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, .12);
+}
+textarea[readonly] { color: var(--accent); background: #05080f; }
+textarea::placeholder, input::placeholder { color: var(--text-mute); }
+.row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.btn {
+  padding: 11px 20px; border: none; border-radius: 9px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: inherit; letter-spacing: .3px;
+  transition: all .15s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:active { transform: scale(.98); }
+.btn-primary { background: var(--accent); color: #062a33; }
+.btn-primary:hover { background: #67e8f9; box-shadow: 0 0 20px rgba(34,211,238,.3); }
+.btn-secondary {
+  background: var(--bg-2); color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: #1c2840; color: var(--text); }
+.btn:disabled { opacity: .55; cursor: wait; }
+.stats {
+  font-size: 12px; color: var(--text-mute); margin-top: 10px;
+  min-height: 16px; font-family: var(--mono);
+}
+.stats.ok { color: var(--ok); }
+.stats.err { color: var(--err); }
+
+/* 豪密可视化 */
+.haomi-viz {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #05080f;
+  overflow: hidden;
+}
+.haomi-viz-title {
+  padding: 10px 14px;
+  background: var(--bg-2);
+  font-size: 11px; color: var(--text-dim);
+  font-family: var(--mono);
+  letter-spacing: .8px;
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between;
+}
+.haomi-row {
+  display: flex; padding: 10px 14px;
+  border-bottom: 1px solid #0d1424;
+  font-family: var(--mono); font-size: 12px;
+  align-items: baseline;
+}
+.haomi-row:last-child { border-bottom: none; }
+.haomi-label {
+  width: 96px; flex-shrink: 0;
+  color: var(--text-mute); font-size: 11px;
+  letter-spacing: .5px;
+}
+.haomi-value {
+  color: var(--accent); letter-spacing: 1.5px;
+  word-break: break-all; line-height: 1.7;
+}
+.haomi-row.ks .haomi-value { color: var(--accent-2); }
+.haomi-row.ct .haomi-value { color: #a78bfa; }
+.haomi-row.pt .haomi-value { color: var(--text-dim); }
+
+.about {
+  margin-top: 22px;
+  background: rgba(15, 23, 42, .7);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2px 22px;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.75;
+}
+.about summary {
+  cursor: pointer; font-weight: 700; color: var(--accent);
+  padding: 16px 0; outline: none; list-style: none;
+  font-size: 13px; letter-spacing: .4px;
+}
+.about summary::-webkit-details-marker { display: none; }
+.about summary::before { content: "▸ "; }
+.about[open] summary::before { content: "▾ "; }
+.about h3 {
+  font-size: 12px; margin: 18px 0 8px;
+  color: var(--text); letter-spacing: .5px;
+  font-family: var(--mono);
+}
+.about p { margin: 0 0 12px; }
+.about code {
+  background: #0a1020; color: var(--accent-2);
+  padding: 2px 6px; border-radius: 4px;
+  font-family: var(--mono); font-size: 12px;
+}
+.about ul { margin: 6px 0 14px; padding-left: 20px; }
+.about li { margin: 4px 0; }
+.about strong { color: var(--text); }
+.footer-note {
+  text-align: center; font-size: 11px; color: var(--text-mute);
+  margin-top: 24px; font-family: var(--mono);
+  letter-spacing: .3px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1><span class="hl">豪密</span> · 互联网版</h1>
+    <p class="subtitle">ONE-TIME-PAD → STREAM CIPHER · PBKDF2 · SHA-256 · HMAC</p>
+  </header>
+
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" data-tab="enc">🔒 加密</div>
+      <div class="tab" data-tab="dec">🔓 解密</div>
+    </div>
+
+    <!-- 加密面板 -->
+    <div class="panel active" id="panel-enc">
+      <label>明文</label>
+      <textarea id="plainText" placeholder="输入要加密的文字…"></textarea>
+
+      <label>密钥（口令）</label>
+      <input type="password" id="encPassword"
+             placeholder="输入一个强口令…" autocomplete="new-password">
+
+      <div class="row">
+        <button class="btn btn-primary" id="btnEncrypt">🔒 加密</button>
+        <button class="btn btn-secondary" id="btnClearEnc">清空</button>
+      </div>
+
+      <label>密文（Base64）</label>
+      <textarea id="cipherOut" readonly placeholder="加密结果将显示在这里…"></textarea>
+      <div class="stats" id="encStats"></div>
+
+      <div class="haomi-viz" id="haomiViz" style="display:none;">
+        <div class="haomi-viz-title">
+          <span>豪密结构可视化（前 16 字节）</span>
+          <span>≡ 底本编码 + 乱数表</span>
+        </div>
+        <div class="haomi-row pt">
+          <div class="haomi-label">底本编码</div>
+          <div class="haomi-value" id="viz-pt"></div>
+        </div>
+        <div class="haomi-row ks">
+          <div class="haomi-label">乱数表</div>
+          <div class="haomi-value" id="viz-ks"></div>
+        </div>
+        <div class="haomi-row ct">
+          <div class="haomi-label">密文</div>
+          <div class="haomi-value" id="viz-ct"></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <button class="btn btn-secondary" id="btnCopyEnc">📋 复制密文</button>
+      </div>
+    </div>
+
+    <!-- 解密面板 -->
+    <div class="panel" id="panel-dec">
+      <label>密文（Base64）</label>
+      <textarea id="cipherIn" placeholder="粘贴要解密的 Base64 密文…"></textarea>
+
+      <label>密钥（口令）</label>
+      <input type="password" id="decPassword"
+             placeholder="输入加密时使用的口令…" autocomplete="new-password">
+
+      <div class="row">
+        <button class="btn btn-primary" id="btnDecrypt">🔓 解密</button>
+        <button class="btn btn-secondary" id="btnClearDec">清空</button>
+      </div>
+
+      <label>明文</label>
+      <textarea id="plainOut" readonly placeholder="解密结果将显示在这里…"></textarea>
+      <div class="stats" id="decStats"></div>
+
+      <div class="row">
+        <button class="btn btn-secondary" id="btnCopyDec">📋 复制明文</button>
+      </div>
+    </div>
+  </div>
+
+  <details class="about">
+    <summary>设计原理：豪密如何映射到现代密码学</summary>
+
+    <h3>◆ 豪密的核心（1930 年代）</h3>
+    <p>周恩来设计的“豪密”本质上是 <strong>一次一密（One-Time Pad）</strong> 的变体：</p>
+    <p><code>密文 = (底本编码 + 乱数) mod 10</code></p>
+    <ul>
+      <li><strong>底本编码</strong>：把汉字按约定底本转为数字序列</li>
+      <li><strong>乱数表</strong>：每份电报一张，真随机、等长、用后即毁</li>
+      <li><strong>无条件安全</strong>：同字不同码，理论上不可破译</li>
+    </ul>
+
+    <h3>◆ 本工具的映射</h3>
+    <ul>
+      <li><strong>底本编码</strong> → <code>UTF-8</code> 字节流</li>
+      <li><strong>乱数表</strong> → <code>SHA-256</code> 计数器模式生成的 <strong>密钥流</strong></li>
+      <li><strong>模十加法</strong> → 按字节 <code>XOR</code>（等价于模 2 的加法）</li>
+      <li><strong>一次性</strong> → 每次加密生成新的随机 <code>salt</code> 和 <code>nonce</code></li>
+      <li><strong>完整性</strong> → <code>HMAC-SHA256</code>（豪密时代不具备的能力）</li>
+    </ul>
+
+    <h3>◆ 密钥流怎么来的</h3>
+    <p>口令先经 <code>PBKDF2</code>（20 万次迭代）派生出 64 字节主密钥，拆为加密密钥和 MAC 密钥：</p>
+    <p><code>密钥流块_i = SHA-256(加密密钥 ‖ nonce ‖ counter_i)</code></p>
+    <p>把哈希函数当作伪随机函数（PRF）使用，构造上是安全的，远优于“口令直接异或”。</p>
+
+    <h3>◆ 与豪密的差异</h3>
+    <ul>
+      <li>豪密是<strong>信息论安全</strong>；本工具是<strong>计算安全</strong>——破解在计算上不可行</li>
+      <li>豪密依赖乱数表保密；本工具遵循 Kerckhoffs 原则，算法公开，只依赖口令保密</li>
+      <li>豪密乱数需真随机且等长；本工具用 PRF 生成密钥流，由 SHA-256 与 PBKDF2 保证安全</li>
+    </ul>
+
+    <p style="color: var(--text-mute); font-size: 12px; margin-top: 16px;">
+      ⚠️ 本工具仅作教学演示。生产环境请使用 libsodium / OpenSSL / WebCrypto 的成熟封装。
+    </p>
+  </details>
+
+  <p class="footer-note">
+    ALL COMPUTATION RUNS LOCALLY IN YOUR BROWSER · NOTHING IS SENT ANYWHERE
+  </p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const enc = new TextEncoder();
+  const dec = new TextDecoder('utf-8', { fatal: true });
+
+  // ==================== 工具函数 ====================
+
+  function concatBytes(...arrays) {
+    let total = 0;
+    for (const a of arrays) total += a.length;
+    const out = new Uint8Array(total);
+    let off = 0;
+    for (const a of arrays) { out.set(a, off); off += a.length; }
+    return out;
+  }
+
+  function toHex(bytes, maxBytes) {
+    const n = maxBytes ? Math.min(maxBytes, bytes.length) : bytes.length;
+    const parts = [];
+    for (let i = 0; i < n; i++) {
+      parts.push(bytes[i].toString(16).padStart(2, '0').toUpperCase());
+    }
+    return parts.join(' ') + (maxBytes && bytes.length > maxBytes ? ' …' : '');
+  }
+
+  function base64Encode(bytes) {
+    let bin = '';
+    const CHUNK = 0x8000;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+    }
+    return btoa(bin);
+  }
+
+  function base64Decode(str) {
+    const cleaned = str.replace(/\s+/g, '');
+    const bin = atob(cleaned);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  function constantTimeEqual(a, b) {
+    if (a.length !== b.length) return false;
+    let d = 0;
+    for (let i = 0; i < a.length; i++) d |= a[i] ^ b[i];
+    return d === 0;
+  }
+
+  // ==================== 密码学核心 ====================
+
+  const PBKDF2_ITERATIONS = 200000;
+
+  /**
+   * 口令 → (加密密钥, MAC密钥)
+   * 对应豪密中的“把口令扩展成足够长的乱数表”
+   */
+  async function deriveKeys(password, salt) {
+    const pwBytes = enc.encode(password);
+    const baseKey = await crypto.subtle.importKey(
+      'raw', pwBytes, 'PBKDF2', false, ['deriveBits']
+    );
+    const bits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+      baseKey, 512  // 64 bytes
+    );
+    const k = new Uint8Array(bits);
+    return { encKey: k.slice(0, 32), macKey: k.slice(32, 64) };
+  }
+
+  /**
+   * 密钥流生成 —— 对应豪密的“乱数表”
+   * block_i = SHA-256(encKey ‖ nonce ‖ uint32_be(i))
+   */
+  async function generateKeyStream(encKey, nonce, length) {
+    const out = new Uint8Array(length);
+    const counter = new Uint8Array(4);
+    let offset = 0, i = 0;
+    while (offset < length) {
+      counter[0] = (i >>> 24) & 0xff;
+      counter[1] = (i >>> 16) & 0xff;
+      counter[2] = (i >>> 8) & 0xff;
+      counter[3] = i & 0xff;
+      const block = new Uint8Array(
+        await crypto.subtle.digest('SHA-256', concatBytes(encKey, nonce, counter))
+      );
+      const take = Math.min(32, length - offset);
+      out.set(block.subarray(0, take), offset);
+      offset += take;
+      i++;
+    }
+    return out;
+  }
+
+  async function hmacSha256(keyBytes, data) {
+    const key = await crypto.subtle.importKey(
+      'raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    return new Uint8Array(await crypto.subtle.sign('HMAC', key, data));
+  }
+
+  /**
+   * 加密
+   * 输出结构： salt(16) ‖ nonce(16) ‖ ciphertext(变长) ‖ mac(32)
+   */
+  async function encrypt(plaintext, password) {
+    const plainBytes = enc.encode(plaintext);
+    const salt  = crypto.getRandomValues(new Uint8Array(16));
+    const nonce = crypto.getRandomValues(new Uint8Array(16));
+
+    const { encKey, macKey } = await deriveKeys(password, salt);
+    const keyStream = await generateKeyStream(encKey, nonce, plainBytes.length);
+
+    const cipherBytes = new Uint8Array(plainBytes.length);
+    for (let i = 0; i < plainBytes.length; i++) {
+      cipherBytes[i] = plainBytes[i] ^ keyStream[i];
+    }
+
+    const mac = await hmacSha256(macKey, concatBytes(salt, nonce, cipherBytes));
+
+    return {
+      payload: base64Encode(concatBytes(salt, nonce, cipherBytes, mac)),
+      plainBytes, keyStream, cipherBytes
+    };
+  }
+
+  /**
+   * 解密（先验 MAC，再解密密文）
+   */
+  async function decrypt(base64Str, password) {
+    const payload = base64Decode(base64Str);
+    const MIN = 16 + 16 + 32;
+    if (payload.length < MIN) throw new Error('密文长度不足，格式无效');
+
+    const salt        = payload.slice(0, 16);
+    const nonce       = payload.slice(16, 32);
+    const cipherBytes = payload.slice(32, payload.length - 32);
+    const mac         = payload.slice(payload.length - 32);
+
+    const { encKey, macKey } = await deriveKeys(password, salt);
+
+    const expected = await hmacSha256(macKey, concatBytes(salt, nonce, cipherBytes));
+    if (!constantTimeEqual(mac, expected)) {
+      throw new Error('认证失败：口令错误或数据被篡改');
+    }
+
+    const keyStream = await generateKeyStream(encKey, nonce, cipherBytes.length);
+    const plainBytes = new Uint8Array(cipherBytes.length);
+    for (let i = 0; i < cipherBytes.length; i++) {
+      plainBytes[i] = cipherBytes[i] ^ keyStream[i];
+    }
+
+    return { plaintext: dec.decode(plainBytes), plainBytes, keyStream, cipherBytes };
+  }
+
+  // ==================== 界面交互 ====================
+
+  const $ = id => document.getElementById(id);
+
+  // WebCrypto 可用性检查
+  if (!window.crypto || !crypto.subtle) {
+    document.querySelectorAll('.panel').forEach(p => {
+      p.innerHTML = '<p style="color:#f87171;padding:20px;font-family:monospace;">' +
+                    '当前环境不可用 crypto.subtle。请通过 HTTPS 或 localhost 访问本页面。</p>';
+    });
+    return;
+  }
+
+  // Tab 切换
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      $('panel-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---- 加密 ----
+  $('btnEncrypt').addEventListener('click', async function () {
+    const plain = $('plainText').value;
+    const pw    = $('encPassword').value;
+    const stats = $('encStats');
+
+    if (!plain) { stats.className = 'stats err'; stats.textContent = '请先输入明文'; return; }
+    if (!pw)    { stats.className = 'stats err'; stats.textContent = '请输入密钥（口令）'; return; }
+
+    this.disabled = true;
+    stats.className = 'stats';
+    stats.textContent = '正在派生密钥并生成密钥流…';
+
+    try {
+      const t0 = performance.now();
+      const r  = await encrypt(plain, pw);
+      const ms = (performance.now() - t0).toFixed(0);
+
+      $('cipherOut').value = r.payload;
+
+      stats.className = 'stats ok';
+      stats.textContent =
+        '✓ 完成：明文 ' + r.plainBytes.length + ' 字节 → 密文 ' +
+        r.cipherBytes.length + ' 字节（Base64 ' + r.payload.length +
+        ' 字符）｜耗时 ' + ms + ' ms';
+
+      // 豪密可视化
+      $('viz-pt').textContent = toHex(r.plainBytes, 16);
+      $('viz-ks').textContent = toHex(r.keyStream, 16);
+      $('viz-ct').textContent = toHex(r.cipherBytes, 16);
+      $('haomiViz').style.display = 'block';
+    } catch (e) {
+      stats.className = 'stats err';
+      stats.textContent = '✗ ' + (e.message || e);
+    } finally {
+      this.disabled = false;
+    }
+  });
+
+  // ---- 解密 ----
+  $('btnDecrypt').addEventListener('click', async function () {
+    const cipher = $('cipherIn').value.trim();
+    const pw     = $('decPassword').value;
+    const stats  = $('decStats');
+    const out    = $('plainOut');
+
+    if (!cipher) { stats.className = 'stats err'; stats.textContent = '请粘贴密文'; return; }
+    if (!pw)     { stats.className = 'stats err'; stats.textContent = '请输入密钥（口令）'; return; }
+
+    this.disabled = true;
+    stats.className = 'stats';
+    stats.textContent = '正在验证并解密…';
+
+    try {
+      const t0 = performance.now();
+      const r  = await decrypt(cipher, pw);
+      const ms = (performance.now() - t0).toFixed(0);
+
+      out.value = r.plaintext;
+      stats.className = 'stats ok';
+      stats.textContent = '✓ 解密成功：' + r.plainBytes.length + ' 字节｜耗时 ' + ms + ' ms';
+    } catch (e) {
+      out.value = '';
+      stats.className = 'stats err';
+      stats.textContent = '✗ ' + (e.message || e);
+    } finally {
+      this.disabled = false;
+    }
+  });
+
+  // ---- 清空 ----
+  $('btnClearEnc').addEventListener('click', () => {
+    $('plainText').value = '';
+    $('cipherOut').value = '';
+    $('encPassword').value = '';
+    $('encStats').textContent = '';
+    $('encStats').className = 'stats';
+    $('haomiViz').style.display = 'none';
+  });
+
+  $('btnClearDec').addEventListener('click', () => {
+    $('cipherIn').value = '';
+    $('plainOut').value = '';
+    $('decPassword').value = '';
+    $('decStats').textContent = '';
+    $('decStats').className = 'stats';
+  });
+
+  // ---- 复制 ----
+  async function copyText(text, btn) {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      document.body.removeChild(ta);
+    }
+    const old = btn.textContent;
+    btn.textContent = '✓ 已复制';
+    setTimeout(() => { btn.textContent = old; }, 1400);
+  }
+
+  $('btnCopyEnc').addEventListener('click', function () {
+    copyText($('cipherOut').value, this);
+  });
+  $('btnCopyDec').addEventListener('click', function () {
+    copyText($('plainOut').value, this);
+  });
+
+  // ---- 快捷键 ----
+  $('plainText').addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') $('btnEncrypt').click();
+  });
+  $('cipherIn').addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') $('btnDecrypt').click();
+  });
+
+})();
+</script>
+</body>
+</html>
