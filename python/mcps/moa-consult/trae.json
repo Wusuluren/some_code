@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "moa_consult": {
+      "command": "python3",
+      "args": [
+        "~/.agents/mcps/moa-consult/server.py"
+      ],
+      "env": {
+        "OPENROUTER_API_KEY": "",
+        "OPENAI_BASE_URL": ""
+      }
+    }
+  }
+}

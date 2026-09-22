@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emoji 隐写工具 · Unicode 变体选择符</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 40px 20px;
+    color: #1f2937;
+  }
+  .container { max-width: 780px; margin: 0 auto; }
+
+  h1 {
+    color: #fff; text-align: center; font-size: 28px;
+    margin: 0 0 8px; letter-spacing: .5px;
+  }
+  .subtitle {
+    color: rgba(255,255,255,.82); text-align: center;
+    margin: 0 0 28px; font-size: 14px;
+  }
+
+  .card {
+    background: #fff; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,.22);
+  }
+
+  .tabs { display: flex; border-bottom: 1px solid #e5e7eb; background: #fafafa; }
+  .tab {
+    flex: 1; padding: 16px; text-align: center; cursor: pointer;
+    font-weight: 600; font-size: 14px; color: #6b7280;
+    border-bottom: 2px solid transparent; transition: all .18s;
+    user-select: none;
+  }
+  .tab:hover { color: #4b5563; }
+  .tab.active { color: #6366f1; border-bottom-color: #6366f1; background: #fff; }
+
+  .panel { padding: 24px; display: none; }
+  .panel.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: none;} }
+
+  label {
+    display: block; font-size: 13px; font-weight: 600;
+    color: #374151; margin: 18px 0 6px;
+  }
+  label:first-child { margin-top: 0; }
+
+  textarea, input[type="text"], input[type="password"] {
+    width: 100%; padding: 12px; border: 1px solid #d1d5db;
+    border-radius: 10px; font-size: 14px; font-family: inherit;
+    outline: none; transition: border-color .18s, box-shadow .18s;
+    background: #fff; color: #111827;
+  }
+  textarea { resize: vertical; min-height: 96px; line-height: 1.55; }
+  textarea:focus, input:focus {
+    border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+  }
+  textarea[readonly] { background: #f9fafb; }
+  input#carrier {
+    font-size: 22px; text-align: center; width: 90px;
+    padding: 8px; line-height: 1.2;
+  }
+
+  .emoji-presets { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .emoji-presets button {
+    background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 9px;
+    font-size: 19px; width: 42px; height: 42px; cursor: pointer;
+    padding: 0; line-height: 1; transition: all .15s;
+  }
+  .emoji-presets button:hover {
+    background: #e0e7ff; border-color: #a5b4fc; transform: translateY(-1px);
+  }
+
+  .row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 11px 20px; border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: all .18s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: #6366f1; color: #fff; }
+  .btn-primary:hover { background: #4f46e5; }
+  .btn-secondary { background: #f3f4f6; color: #374151; }
+  .btn-secondary:hover { background: #e5e7eb; }
+
+  .stats { font-size: 12px; color: #6b7280; margin-top: 8px; min-height: 16px; }
+  .stats.error { color: #dc2626; font-weight: 600; }
+  .stats.ok { color: #059669; font-weight: 600; }
+
+  .about {
+    margin-top: 22px; background: rgba(255,255,255,.94);
+    border-radius: 14px; padding: 4px 20px; font-size: 13px;
+    color: #4b5563; line-height: 1.75;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  }
+  .about summary {
+    cursor: pointer; font-weight: 700; color: #4f46e5;
+    padding: 14px 0; outline: none; list-style: none;
+  }
+  .about summary::-webkit-details-marker { display: none; }
+  .about summary::before { content: "▸ "; }
+  .about[open] summary::before { content: "▾ "; }
+  .about p { margin: 0 0 12px; }
+  .about code {
+    background: #eef2ff; color: #4338ca; padding: 1px 5px;
+    border-radius: 4px; font-size: 12px;
+  }
+  .about ul { margin: 6px 0 14px; padding-left: 20px; }
+  .about li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🙈 Emoji 隐写工具</h1>
+  <p class="subtitle">把任意文字藏进表情符号里 · 基于 Unicode 变体选择符</p>
+
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" data-tab="enc">🔒 加密（隐藏）</div>
+      <div class="tab" data-tab="dec">🔓 解密（还原）</div>
+    </div>
+
+    <!-- ================= 加密面板 ================= -->
+    <div class="panel active" id="panel-enc">
+      <label>要隐藏的文字</label>
+      <textarea id="plainText" placeholder="在这里输入想隐藏的内容…"></textarea>
+
+      <label>载体表情（视觉上显示的那一个）</label>
+      <input type="text" id="carrier" value="😀" maxlength="16" spellcheck="false">
+      <div class="emoji-presets" id="emojiPresets">
+        <button data-emoji="😀">😀</button>
+        <button data-emoji="🔐">🔐</button>
+        <button data-emoji="🌸">🌸</button>
+        <button data-emoji="🚀">🚀</button>
+        <button data-emoji="🐱">🐱</button>
+        <button data-emoji="❤️">❤️</button>
+      </div>
+
+      <label>密码（可选）</label>
+      <input type="password" id="encPassword"
+             placeholder="留空则仅隐写；填写则先加密再隐写" autocomplete="new-password">
+
+      <div class="row">
+        <button class="btn btn-primary" id="btnEncrypt">🔒 生成隐藏文本</button>
+        <button class="btn btn-secondary" id="btnClearEnc">清空</button>
+      </div>
+
+      <label>输出结果（复制它发送即可）</label>
+      <textarea id="stegoOut" readonly placeholder="结果将显示在这里…"></textarea>
+      <div class="stats" id="encStats"></div>
+
+      <div class="row">
+        <button class="btn btn-secondary" id="btnCopyEnc">📋 复制结果</button>
+      </div>
+    </div>
+
+    <!-- ================= 解密面板 ================= -->
+    <div class="panel" id="panel-dec">
+      <label>粘贴包含隐藏数据的文本</label>
+      <textarea id="stegoIn" placeholder="把那个“表情符号”粘贴到这里…"></textarea>
+
+      <label>密码（加密时填过才需要）</label>
+      <input type="password" id="decPassword"
+             placeholder="留空表示未加密" autocomplete="new-password">
+
+      <div class="row">
+        <button class="btn btn-primary" id="btnDecrypt">🔓 还原内容</button>
+        <button class="btn btn-secondary" id="btnClearDec">清空</button>
+      </div>
+
+      <label>还原结果</label>
+      <textarea id="plainOut" readonly placeholder="隐藏的内容将显示在这里…"></textarea>
+      <div class="stats" id="decStats"></div>
+
+      <div class="row">
+        <button class="btn btn-secondary" id="btnCopyDec">📋 复制结果</button>
+      </div>
+    </div>
+  </div>
+
+  <details class="about">
+    <summary>原理说明</summary>
+    <p>
+      Unicode 定义了 256 个<strong>变体选择符</strong>（Variation Selector），
+      它们本身不显示任何字形，却能紧跟在其他字符后面被计算机正常读取。256 个刚好对应
+      一个字节的 256 种取值。
+    </p>
+    <ul>
+      <li>字节 <code>0x00–0x0F</code> → 码位 <code>U+FE00–U+FE0F</code></li>
+      <li>字节 <code>0x10–0xFF</code> → 码位 <code>U+E0100–U+E01EF</code></li>
+    </ul>
+    <p>
+      工具把文字按 UTF-8 拆成字节，逐个映射成变体选择符，拼在一个表情后面。
+      视觉上仍然只有一个表情，但复制走之后可以完整还原。
+      勾选密码时会额外用 <code>FNV-1a + xorshift32</code> 生成密钥流做异或，
+      属于轻量混淆，<strong>不是强加密</strong>，重要数据请配合 AES 等专业工具。
+    </p>
+    <p>
+      ⚠️ 注意：部分聊天软件（微信、QQ 等）在转发时可能剥离变体选择符，
+      建议先在自己常用的平台上测试一次传输保真度。
+    </p>
+  </details>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 核心编解码 ================= */
+
+  const VS_LOW_BASE  = 0xFE00;   // 对应字节 0x00–0x0F
+  const VS_HIGH_BASE = 0xE0100;  // 对应字节 0x10–0xFF
+
+  function byteToVS(b) {
+    if (b < 0x10) return String.fromCodePoint(VS_LOW_BASE + b);
+    return String.fromCodePoint(VS_HIGH_BASE + (b - 0x10));
+  }
+
+  function vsToByte(cp) {
+    if (cp >= 0xFE00 && cp <= 0xFE0F) return cp - 0xFE00;
+    if (cp >= 0xE0100 && cp <= 0xE01EF) return cp - 0xE0100 + 0x10;
+    return -1;
+  }
+
+  /* ============ 轻量流加密（对称） ============ */
+
+  function hash32(str) {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h >>> 0;
+  }
+
+  function xorCrypt(bytes, password) {
+    if (!password) return bytes;
+    let state = hash32(password) || 0x9E3779B9;
+    const out = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) {
+      state ^= state << 13; state >>>= 0;
+      state ^= state >>> 17; state >>>= 0;
+      state ^= state << 5;  state >>>= 0;
+      out[i] = bytes[i] ^ (state & 0xFF);
+    }
+    return out;
+  }
+
+  /* ================= 对外接口 ================= */
+
+  function hide(text, carrier, password) {
+    let bytes = new TextEncoder().encode(text);
+    bytes = xorCrypt(bytes, password);
+    let out = carrier || '';
+    for (let i = 0; i < bytes.length; i++) out += byteToVS(bytes[i]);
+    return { text: out, bytes: bytes.length };
+  }
+
+  function reveal(stego, password) {
+    const bytes = [];
+    for (const ch of stego) {              // for...of 按码位迭代，可正确处理代理对
+      const cp = ch.codePointAt(0);
+      const b = vsToByte(cp);
+      if (b >= 0) bytes.push(b);
+    }
+    if (bytes.length === 0) {
+      throw new Error('未发现隐藏数据（文本里没有变体选择符）');
+    }
+    let arr = new Uint8Array(bytes);
+    arr = xorCrypt(arr, password);         // 异或自逆，加解密同一个函数
+    try {
+      return new TextDecoder('utf-8', { fatal: true }).decode(arr);
+    } catch (e) {
+      throw new Error('解码失败：密码错误或数据已损坏');
+    }
+  }
+
+  /* ================= 界面逻辑 ================= */
+
+  const $ = id => document.getElementById(id);
+
+  // --- Tab 切换 ---
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      $('panel-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // --- 载体表情预设 ---
+  $('emojiPresets').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    $('carrier').value = btn.dataset.emoji;
+  });
+
+  // --- 复制 ---
+  async function copyText(text, btn) {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e2) {}
+      document.body.removeChild(ta);
+    }
+    const old = btn.textContent;
+    btn.textContent = '✓ 已复制';
+    setTimeout(() => { btn.textContent = old; }, 1400);
+  }
+
+  // --- 加密 ---
+  $('btnEncrypt').addEventListener('click', () => {
+    const plain    = $('plainText').value;
+    const carrier  = $('carrier').value || '😀';
+    const password = $('encPassword').value;
+    const stats    = $('encStats');
+
+    if (!plain) {
+      stats.className = 'stats error';
+      stats.textContent = '请先输入要隐藏的文字';
+      return;
+    }
+
+    const t0 = performance.now();
+    const res = hide(plain, carrier, password);
+    const ms  = (performance.now() - t0).toFixed(1);
+
+    $('stegoOut').value = res.text;
+
+    stats.className = 'stats ok';
+    stats.textContent =
+      `✅ 完成：${res.bytes} 字节 → ${res.bytes} 个变体选择符` +
+      `｜总长度 ${res.text.length} 个 UTF-16 码元｜耗时 ${ms} ms` +
+      (password ? '｜已用密码混淆' : '｜未加密（仅隐写）');
+  });
+
+  // --- 解密 ---
+  $('btnDecrypt').addEventListener('click', () => {
+    const stego    = $('stegoIn').value;
+    const password = $('decPassword').value;
+    const stats    = $('decStats');
+    const out      = $('plainOut');
+
+    if (!stego) {
+      stats.className = 'stats error';
+      stats.textContent = '请先粘贴包含隐藏数据的文本';
+      return;
+    }
+
+    try {
+      const t0 = performance.now();
+      const text = reveal(stego, password);
+      const ms = (performance.now() - t0).toFixed(1);
+
+      out.value = text;
+      stats.className = 'stats ok';
+      stats.textContent = `✅ 还原成功：${text.length} 个字符｜耗时 ${ms} ms`;
+    } catch (err) {
+      out.value = '';
+      stats.className = 'stats error';
+      stats.textContent = '❌ ' + err.message;
+    }
+  });
+
+  // --- 清空 ---
+  $('btnClearEnc').addEventListener('click', () => {
+    $('plainText').value = '';
+    $('stegoOut').value = '';
+    $('encPassword').value = '';
+    $('encStats').textContent = '';
+    $('encStats').className = 'stats';
+  });
+
+  $('btnClearDec').addEventListener('click', () => {
+    $('stegoIn').value = '';
+    $('plainOut').value = '';
+    $('decPassword').value = '';
+    $('decStats').textContent = '';
+    $('decStats').className = 'stats';
+  });
+
+  // --- 复制按钮 ---
+  $('btnCopyEnc').addEventListener('click', function () {
+    copyText($('stegoOut').value, this);
+  });
+  $('btnCopyDec').addEventListener('click', function () {
+    copyText($('plainOut').value, this);
+  });
+
+  // --- 顺手：Ctrl/Cmd + Enter 快捷执行 ---
+  $('plainText').addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') $('btnEncrypt').click();
+  });
+  $('stegoIn').addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') $('btnDecrypt').click();
+  });
+})();
+</script>
+</body>
+</html>
