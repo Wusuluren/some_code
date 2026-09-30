@@ -1,0 +1,24 @@
+# reasonix-mini sample config — copy to ./reasonix-mini.toml or ~/.reasonix-mini/config.toml
+# Resolution: project ./reasonix-mini.toml > user config > built-in defaults.
+default_model = "deepseek"
+
+[[providers]]
+name        = "deepseek"
+kind        = "openai"
+base_url    = "https://api.deepseek.com"
+model       = "deepseek-chat"
+api_key_env = "DEEPSEEK_API_KEY"
+
+[agent]
+# system_prompt = "..."        # or system_prompt_file = "prompts/agent.md"
+temperature = 0.0
+max_steps   = 50
+
+[tools]
+enabled = []   # empty = all builtins (read_file write_file edit_file move_file bash ls glob grep)
+
+[permissions]
+mode  = "ask"                                     # writer fallback: ask|allow|deny
+deny  = ["Bash(rm -rf*)"]                         # hard-blocked in every mode
+allow = ["Bash(go test:*)", "Bash(git status:*)"] # never prompted
+ask   = []
