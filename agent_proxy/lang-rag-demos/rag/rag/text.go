@@ -1,5 +1,4 @@
 package rag
-package rag
 
 import (
 	"strings"
