@@ -1,4 +1,7 @@
-# Deep Agent Harness — 逐版本最小实现（v1..v7）
+# Deep Agent Harness — 逐版本最小实现（v1..v15）
+
+两阶段阶梯：**v1..v7** 长出 Deep Agents 的 harness 机制；**v8..v15** 对照 jingwei
+（Rust 写的"最小生产级编码 Agent"）补齐把它真正落地运行的工程能力。
 
 起点是 `minimal/`（约 880 行的精简 Claude Code：Cobra 入口 + net/http Messages API
 client + `executeQueryLoop` 主循环 + Bash/Read/Write/Edit/Grep 五工具）。它已经能跑
@@ -44,3 +47,32 @@ env -u GOROOT go build -o v7-agent ./v7
 ```
 
 各版本的细节见对应目录下的 `README.md`。
+
+## 第二阶段：v8..v15 —— 生产落地能力（对照 jingwei）
+
+v7 的 harness 齐了，但相比 jingwei 还缺 8 项"能稳定跑在生产里"的能力。每版仍只叠加一个
+机制、改动收口在边界（协议翻译在 client、MCP 在独立包、裁剪在 engine），沿用 `--flag` 开关。
+
+| 版本 | 能力 | 一句话 | 关键改动 |
+|---|---|---|---|
+| `v8/` | **多厂商线协议** | 同一中性模型，可选 OpenAI Chat Completions 方言 | `api/wire.go` 双向翻译 + `--protocol` |
+| `v9/` | **流式 SSE** | 逐 token 边到边显示，增量块重组为中性响应 | `api/stream.go`（anthropic+openai）+ `--stream` |
+| `v10/` | **MCP 客户端** | stdio JSON-RPC 2.0 接外部工具，命名 `mcp__server__tool` | `mcp/` 包 + `--mcp` |
+| `v11/` | **上下文管理** | 估算 token，超限只裁发送副本、保底近期 | `engine/compact.go` + `--context-size` |
+| `v12/` | **健壮文件写** | 原子 temp+rename、陈旧写拒绝、`edits[]` 原子批 | `tools/robust.go` + Write/Edit 重写 |
+| `v13/` | **会话管理** | 按项目多会话、时间戳 ID、列出/续跑 | `sessions/` 包 + `--list`/`-c`/`--session` |
+| `v14/` | **工具输出截断** | 所有工具结果在唯一收口点封顶 50KB | `engine/truncate.go`（`MAX_TOOL_OUTPUT`） |
+| `v15/` | **TUI 前端** | 最小 Bubble Tea，消费同一 Event channel | `ui/tui.go` + `--tui` |
+
+v8..v15 反向也保留了 jingwei 没有的 harness 机制（Sandbox/Interpreter/Memory/Subagent/
+Human-in-the-loop），且协议、MCP、流式都收口在边界，上层引擎与中性模型基本不动。
+
+```bash
+# 第二阶段一次性验证
+env -u GOROOT go build ./v8/... ./v9/... ./v10/... ./v11/... ./v12/... ./v13/... ./v14/... ./v15/...
+env -u GOROOT go test  ./v8/... ./v9/... ./v10/... ./v11/... ./v12/... ./v13/... ./v14/... ./v15/...
+
+# 组合示例：OpenAI 方言 + 流式 + MCP + 上下文裁剪 + TUI
+env -u GOROOT go build -o v15-agent ./v15
+./v15-agent --protocol openai --stream --context-size 8000 --tui "分析 demos/ 并总结"
+```
